@@ -18,6 +18,7 @@ void *print(void *arg);
 
 int main(){ //this is the server
     server("8820");
+    return 0;
 }
 
 int server(char* port){
@@ -48,6 +49,7 @@ int server(char* port){
         }
 
         if(!bind(mySocket, r -> ai_addr, r -> ai_addrlen) && !listen(mySocket, BACKLOG)){
+            printf("got something\n");
             break;
         }
 
@@ -68,6 +70,7 @@ int server(char* port){
     con = malloc(sizeof(struct connection));
     for(;;){
         con -> addr_len = sizeof(struct sockaddr_storage);
+        printf("waiting to accept\n");
         con -> fd = accept(mySocket, (struct sockaddr *) &con -> addr, &con ->addr_len);
       
         if(con -> fd == -1){
