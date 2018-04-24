@@ -69,9 +69,13 @@ int server(char* port){
     for(;;){
         con -> addr_len = sizeof(struct sockaddr_storage);
         con -> fd = accept(mySocket, (struct sockaddr *) &con -> addr, &con ->addr_len);
+      
         if(con -> fd == -1){
              printf("accept\n");
+             continue;
         }
+
+        printf("accepted\n");
 
         rc = pthread_create(&tid, NULL, print, con);
         if(rc != 0){
