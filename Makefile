@@ -3,4 +3,5 @@ make: server.c client.c
 	gcc -g -o myClient client.c
 
 clean: server
-	rm -f server
+	rm -f myServer myServer.o 
+	rm -f myClient myClient.o
