@@ -8,7 +8,8 @@
 #include <errno.h>
 
 
-int netserverinit(char* hostname){
+int netserverinit(char* hostname, int fileMode){
+    //fileMode follows numbers in assignment instructions
   
 }
 
