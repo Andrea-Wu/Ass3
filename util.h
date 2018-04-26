@@ -18,4 +18,4 @@ typedef struct
 
 
 int writeMessage(int fd, Message m);
-int readingMessage(int fd, Message* m);
+int readMessage(int fd, Message* m);
