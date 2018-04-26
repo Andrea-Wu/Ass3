@@ -100,7 +100,7 @@ void * print(void * arg){ //note the void*, void * == thread function
     printf("print is happen\n");
     char host[100], port[10], buf[101];
     struct connection *c = (struct connection*) arg;
-    int rc, nread;
+    int rc, nread, nwrite;
 
     rc = getnameinfo((struct sockaddr*)&c->addr, c->addr_len, host, 100, port, 10, NI_NUMERICSERV);
 
@@ -115,6 +115,7 @@ void * print(void * arg){ //note the void*, void * == thread function
     while((nread = read(c ->fd, buf, 100)) != 0){
         buf[nread] = '\0';
         printf("[%s:%s] read %d bytes |%s|\n", host, port, nread, buf);
+        nwrite = write(c->fd, "Fuck you bitch fuck", strlen("Fuck you bitch fuck"));
 
     }
 

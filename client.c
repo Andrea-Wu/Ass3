@@ -13,11 +13,10 @@ int main(){//this is the client
 int client(char* port){
    
     struct addrinfo *myAddr, hints, *r;
-    hints.ai_flags = AI_PASSIVE;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_family = PF_INET;
 
-    int indic = getaddrinfo("pwd.cs.rutgers.edu", port, &hints, &myAddr);
+    int indic = getaddrinfo("decorator.cs.rutgers.edu", port, &hints, &myAddr);
     
     if (indic != 0){
       perror("getaddrinfo");
