@@ -6,6 +6,24 @@
 #include <string.h>
 #include <pthread.h>
 
+typedef struct sNode{
+    char* str;
+    struct node* fds;
+    struct sNode* next;
+} sNode;
+
+typedef struct node{
+    int fd;
+    int read; //is it reading
+    int write; //is is writing
+    char* filename;
+    int aMode; //access mode
+    struct node* next;
+} node;
+
+sNode** hashtable;  //global              
+
+
 #define BACKLOG 5
 struct connection{ //idk
     struct sockaddr_storage addr;
@@ -17,6 +35,10 @@ int server(char* port);
 void *print(void *arg);
 
 int main(){ //this is the server
+    
+    //create hash table 
+    hashtable = (sNode**)malloc(sizeof(sNode*) * 100);  
+
     server("8820");
     return 0;
 }
@@ -74,12 +96,32 @@ int server(char* port){
         con -> fd = accept(mySocket, (struct sockaddr *) &con -> addr, &con ->addr_len);
       
         if(con -> fd == -1){
-             printf("accept\n");
+             printf("did not accept\n");
              continue;
         }
 
         printf("accepted\n");
 
+       Message mess;
+       int didRead = readMessage(con -> fd, &mess ); ///right?
+
+       MessageType messType = mess.message_type;
+       if(messType == Open){
+            //call open
+            myOpen(m -> filename, m-> client_access);
+       }else if(messType == Read){
+            
+       }else if(messType == Write){
+
+       }else if(messType = Close){
+
+       }else{
+            printf("this broke\n");
+       }
+
+
+
+/*
         rc = pthread_create(&tid, NULL, print, con);
         if(rc != 0){
             printf("unable to create thread\n");
@@ -87,6 +129,7 @@ int server(char* port){
         }
 
         pthread_detach(tid);
+        */
 
         con = malloc(sizeof(struct connection));
     }
@@ -126,7 +169,7 @@ void * print(void * arg){ //note the void*, void * == thread function
 
 }
 
-int myOpen(char* fileName, int mode){
+int myOpen(char* fileName, Access mode, int sock){
     //returns an int that represents state of file
 
     //has to check whether exclusive, unrestricted, transaction
@@ -134,6 +177,7 @@ int myOpen(char* fileName, int mode){
                     //1 = unrestricted
                     //2 = transaction
 
+    int fd;
     if(mode == 0){
         //check somethi
     }else if(mode == 1){
@@ -145,6 +189,14 @@ int myOpen(char* fileName, int mode){
     }
 
 
+    Message message;
+    message.fd = fd;
+    int didWrite = writeMessage(sock, message);
+
+    if(didWrite){
+        //did not write
+        printf("server did not write to socket");
+    }
 
 }
 
