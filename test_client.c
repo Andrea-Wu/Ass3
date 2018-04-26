@@ -8,9 +8,9 @@
 #include "libnetfiles.h"
 
 int main(){
-  int status, connection;
+  int status;
   status = netserverinit("decorator.cs.rutgers.edu");
   printf("%d\n", status);
-  connection = openCon();
+  openCon();
   return 0;  
 }
