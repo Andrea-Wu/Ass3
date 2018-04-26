@@ -5,6 +5,7 @@
 #include <netdb.h> //contains AI_PASSIVE?
 #include <errno.h>
 #include <netinet/in.h>
+#include "libnetfiles.h"
 
 int main(){//this is the client
     client("8820");

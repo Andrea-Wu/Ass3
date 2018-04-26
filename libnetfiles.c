@@ -6,21 +6,22 @@
 #include <netdb.h>
 #include "libnetfiles.h"
 #include <errno.h>
+#include "util.h"
 
 #define PORT "8820"
 
 struct addrinfo* hostinfo;
 int mode; //for ext A usage
 
-int netserverinit(char* hostname, int fileMode){
+int netserverinit(char* hostname){
   //fileMode follows numbers in assignment instructions
 
-  struct addrinfo hints, serverinfo;
+  struct addrinfo hints, *serverinfo;
   int status;
 
-  memset(&hints, 0 , sizeof(struct serverinfo));
+  memset(&hints, 0 , sizeof(struct addrinfo));
   hints.ai_family = PF_INET;
-  hints.ai_socketype = SOCK_STREAM;
+  hints.ai_socktype = SOCK_STREAM;
    
   status = getaddrinfo(hostname, PORT, &hints, &serverinfo);
 
@@ -33,14 +34,16 @@ int netserverinit(char* hostname, int fileMode){
 
   //set mode flag depending on the mode
   hostinfo=serverinfo;
-  freeaddrinfo(serverinfo);
+  //freeaddrinfo(serverinfo);
+  //ask Aaron when he freed this linked list or how he managed to make a copy of it.
   return 0; 
 }
 
 int netopen(const char* pathname, int flags){
-   int socket_fd;
-   //establish connection
-   socket_fd = 
+  int socket_fd;
+  //establish connection
+  socket_fd = openCon();
+  
 }
 
 ssize_t netread(int fildes, void* buf, size_t nbyte){
@@ -61,9 +64,8 @@ int netclose(int fd){
 int openCon(){
   int socket_fd,connection;
   struct addrinfo *res;
-
   for (res = hostinfo; res; res->ai_next){
-    socket_fd = socket(res->ai_family, res->ai_socketype, res->ai_protocol);
+    socket_fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (socket_fd == -1){
       perror("socket");
       return -1;
