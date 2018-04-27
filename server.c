@@ -182,6 +182,8 @@ int myOpen(char* filename, Access access, int mode, int con){
                     //2 = transaction
 
     int fd; //fd that will be opened
+
+    sNode*  
    
     if(access == Unrestricted){
         if(mode == O_RDONLY || mode == O_RDWR){
@@ -213,6 +215,7 @@ int myOpen(char* filename, Access access, int mode, int con){
 
     fd = open(filename, mode);
 
+    addFd(fd, mode, filename, access);
 
     Message* message = (Message*)malloc(sizeof(Message));
     message -> fd = fd;
@@ -225,6 +228,77 @@ int myOpen(char* filename, Access access, int mode, int con){
     }
 
 
+}
+
+int hashFunction(char* str){
+    int strLen = strlen(str);
+
+    int bucket = 0; 
+
+    int i = 0;
+    while(i < strLen){
+        bucket = bucket + str[i];
+        i++;
+    }
+
+    bucket = bucket % 100;
+    return bucket;
+}
+
+pthread_mutex_t lockA;
+
+void addFd( int fd, int mode, char* filename, Access aMode){
+    
+    int bucket = hashFunction(filename);
+
+    //create node to insert
+    node* newNode = (node*)malloc(sizeof(node));
+    newNode -> fd = fd;
+
+    if(mode == O_RDONLY || mode == O_RDWR){
+        newNode -> read = 1;
+    }else{
+        newNode -> read = 0;
+    }
+    if(node == O_WRONLY || mode == O_RDWR){
+        newNode -> write = 1;
+    }else{
+        newNode -> write = 0;
+    }
+
+    newNode -> aMode = aMode;
+
+    pthread_mutex_lock(&lockA);
+
+    //find sNode list corresp. to filename
+    sNode* tmp = hashtable[bucket];
+
+    //iterate thru sNode list until string is found
+    while(tmp){
+        if(strcmp(tmp -> str, filename) == 0){
+            break;
+        }
+        
+        tmp = tmp -> next;
+    }
+
+    if(!tmp){ //tmp is null, string does not exist yet in hash table
+        tmp = (sNode*)malloc(sizeof(sNode));
+
+        //insert into hash, randomly...
+        sNode* tmp2 = hashtable[bucket];
+        hashtable[bucket] = tmp;
+        tmp -> next = tmp2;
+    }
+
+    node* fdList = tmp -> fds;
+
+    //fdList should not be null
+    node* tmp3 = tmp -> fdList;
+    tmp -> fds = newNode;
+    newNode -> next = tmp;
+
+    pthread_mutex_unlock(&lockA);
 }
 
 int myRead(int fd, int con, int numBytes){

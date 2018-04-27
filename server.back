@@ -6,6 +6,24 @@
 #include <string.h>
 #include <pthread.h>
 
+typedef struct sNode{
+    char* str;
+    struct node* fds;
+    struct sNode* next;
+} sNode;
+
+typedef struct node{
+    int fd;
+    int read; //is it reading
+    int write; //is is writing
+    char* filename;
+    int aMode; //access mode
+    struct node* next;
+} node;
+
+sNode** hashtable;  //global              
+
+
 #define BACKLOG 5
 struct connection{ //idk
     struct sockaddr_storage addr;
@@ -13,10 +31,18 @@ struct connection{ //idk
     int fd;
 };
 
+int myClose(int fd, int con);
+int myRead(int fd, int con, int numBytes);
+int myOpen(char* filename, Access access, int mode, int con);
+int myWrite(int fd, int con, char* writeMe, int numBytes);
 int server(char* port);
 void *print(void *arg);
 
 int main(){ //this is the server
+    
+    //create hash table 
+    hashtable = (sNode**)malloc(sizeof(sNode*) * 100);  
+
     server("8820");
     return 0;
 }
@@ -74,12 +100,32 @@ int server(char* port){
         con -> fd = accept(mySocket, (struct sockaddr *) &con -> addr, &con ->addr_len);
       
         if(con -> fd == -1){
-             printf("accept\n");
+             printf("did not accept\n");
              continue;
         }
 
         printf("accepted\n");
 
+       Message mess;
+       int didRead = readMessage(con -> fd, &mess ); ///right?
+
+       MessageType messType = mess.message_type;
+       if(messType == Open){
+            //call open
+            myOpen(m -> filename, m-> client_access, m-> mode, con -> fd);
+       }else if(messType == Read){
+            
+       }else if(messType == Write){
+
+       }else if(messType = Close){
+
+       }else{
+            printf("this broke\n");
+       }
+
+    
+
+/*
         rc = pthread_create(&tid, NULL, print, con);
         if(rc != 0){
             printf("unable to create thread\n");
@@ -87,6 +133,7 @@ int server(char* port){
         }
 
         pthread_detach(tid);
+        */
 
         con = malloc(sizeof(struct connection));
     }
@@ -100,7 +147,7 @@ void * print(void * arg){ //note the void*, void * == thread function
     printf("print is happen\n");
     char host[100], port[10], buf[101];
     struct connection *c = (struct connection*) arg;
-    int rc, nread;
+    int rc, nread, nwrite;
 
     rc = getnameinfo((struct sockaddr*)&c->addr, c->addr_len, host, 100, port, 10, NI_NUMERICSERV);
 
@@ -115,6 +162,7 @@ void * print(void * arg){ //note the void*, void * == thread function
     while((nread = read(c ->fd, buf, 100)) != 0){
         buf[nread] = '\0';
         printf("[%s:%s] read %d bytes |%s|\n", host, port, nread, buf);
+        nwrite = write(c->fd, "Fuck you bitch fuck", strlen("Fuck you bitch fuck"));
 
     }
 
@@ -125,38 +173,122 @@ void * print(void * arg){ //note the void*, void * == thread function
 
 }
 
+int myOpen(char* filename, Access access, int mode, int con){
+    //returns an int that represents state of file
+
+    //has to check whether exclusive, unrestricted, transaction
+    //IMPORTANT: let 0 = exclusive
+                    //1 = unrestricted
+                    //2 = transaction
+
+    int fd; //fd that will be opened
+   
+    if(access == Unrestricted){
+        if(mode == O_RDONLY || mode == O_RDWR){
+            //check file hash table for transaction mode
+        }
+
+        if(mode == O_WRONLY || mode == O_RDWR){
+            //check hash table for transaction mode 
+
+            //check hash table for exclusive mode && already writing
+        }
+        
+    }else if(access == Exclusive){
+        if(mode == O_RDONLY || mode == O_RDWR){
+            
+        }
+
+        if(mode == O_WRONLY || mode == O_RDWR){
+            //check transaction mode
+
+            //
+        }
+        
+    }else if(access == Transaction){
+
+    }else{
+        printf("error, undefined mode\n");
+    }
+
+    fd = open(filename, mode);
 
 
+    Message* message = (Message*)malloc(sizeof(Message));
+    message -> fd = fd;
+    int didWrite = writeMessage(con, &message);
+
+    if(didWrite){
+        //did not write
+        printf("server did not write to socket\n");
+        return -1;
+    }
 
 
+}
+
+int myRead(int fd, int con, int numBytes){
+    char* buffer = (char*)malloc(sizeof(char) * (numBytes + 1));
+    read(fd, buffer, numBytes);
+
+    Message* message = (Message*)malloc(sizeof(Message));
+    message -> buffer = buffer;
+    message -> buffer_len = numBytes +1;
 
 
+    if(writeMessage(con, &message)){
+        //did not write
+        printf("server did not write to client\n");
+        return -1;
+    }
 
+    free(message);
+    return 0;
+}
 
+int myWrite(int fd, int con, char* writeMe, int numBytes){
 
+    int bytesWritten = write(fd, writeMe, numBytes); 
 
+    if(bytesWritten == -1){
+        printf("server did not write to file\n");
+        return;
+    }
 
+    Message* message = (Message*)malloc(sizeof(Message));
+    message -> bytes_written = bytesWritten;
 
+    if(writeMessage(con, &message)){
+        printf("server did not write to client\n");
+        return -1;
+    }
 
+    free(message);
+    return 0;
+    
+}
 
+int myClose(int fd, int con){
+    Message* message = (Message*)malloc(sizeof(Message));
 
+    if(close(fd)){
+        printf("server failed to close file\n");
+        messsage -> return_code = -1;
+        if(writeMessage(con, message)){
+            printf("server did not write to client\n");
+            return -2;
+        }
+        return -1;
+    }else{
+        message -> return_code = 0;
+        if(writeMessage(con, message)){
+            printf("server did not write to client\n");
+            return -2;
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        //remove fd from linked list
+    }
+}
 
 
 
