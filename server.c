@@ -31,6 +31,10 @@ struct connection{ //idk
     int fd;
 };
 
+int myClose(int fd, int con);
+int myRead(int fd, int con, int numBytes);
+int myOpen(char* filename, Access access, int mode, int con);
+int myWrite(int fd, int con, char* writeMe, int numBytes);
 int server(char* port);
 void *print(void *arg);
 
@@ -108,7 +112,7 @@ int server(char* port){
        MessageType messType = mess.message_type;
        if(messType == Open){
             //call open
-            myOpen(m -> filename, m-> client_access);
+            myOpen(m -> filename, m-> client_access, m-> mode, con -> fd);
        }else if(messType == Read){
             
        }else if(messType == Write){
@@ -119,7 +123,7 @@ int server(char* port){
             printf("this broke\n");
        }
 
-
+    
 
 /*
         rc = pthread_create(&tid, NULL, print, con);
@@ -169,7 +173,7 @@ void * print(void * arg){ //note the void*, void * == thread function
 
 }
 
-int myOpen(char* fileName, Access mode, int sock){
+int myOpen(char* filename, Access access, int mode, int con){
     //returns an int that represents state of file
 
     //has to check whether exclusive, unrestricted, transaction
@@ -177,61 +181,114 @@ int myOpen(char* fileName, Access mode, int sock){
                     //1 = unrestricted
                     //2 = transaction
 
-    int fd;
-    if(mode == 0){
-        //check somethi
-    }else if(mode == 1){
+    int fd; //fd that will be opened
+   
+    if(access == Unrestricted){
+        if(mode == O_RDONLY || mode == O_RDWR){
+            //check file hash table for transaction mode
+        }
+
+        if(mode == O_WRONLY || mode == O_RDWR){
+            //check hash table for transaction mode 
+
+            //check hash table for exclusive mode && already writing
+        }
         
-    }else if(mode == 2){
+    }else if(access == Exclusive){
+        if(mode == O_RDONLY || mode == O_RDWR){
+            
+        }
+
+        if(mode == O_WRONLY || mode == O_RDWR){
+            //check transaction mode
+
+            //
+        }
+        
+    }else if(access == Transaction){
 
     }else{
         printf("error, undefined mode\n");
     }
 
+    fd = open(filename, mode);
 
-    Message message;
-    message.fd = fd;
-    int didWrite = writeMessage(sock, message);
+
+    Message* message = (Message*)malloc(sizeof(Message));
+    message -> fd = fd;
+    int didWrite = writeMessage(con, &message);
 
     if(didWrite){
         //did not write
-        printf("server did not write to socket");
+        printf("server did not write to socket\n");
+        return -1;
     }
+
 
 }
 
+int myRead(int fd, int con, int numBytes){
+    char* buffer = (char*)malloc(sizeof(char) * (numBytes + 1));
+    read(fd, buffer, numBytes);
+
+    Message* message = (Message*)malloc(sizeof(Message));
+    message -> buffer = buffer;
+    message -> buffer_len = numBytes +1;
 
 
+    if(writeMessage(con, &message)){
+        //did not write
+        printf("server did not write to client\n");
+        return -1;
+    }
 
+    free(message);
+    return 0;
+}
 
+int myWrite(int fd, int con, char* writeMe, int numBytes){
 
+    int bytesWritten = write(fd, writeMe, numBytes); 
 
+    if(bytesWritten == -1){
+        printf("server did not write to file\n");
+        return;
+    }
 
+    Message* message = (Message*)malloc(sizeof(Message));
+    message -> bytes_written = bytesWritten;
 
+    if(writeMessage(con, &message)){
+        printf("server did not write to client\n");
+        return -1;
+    }
 
+    free(message);
+    return 0;
+    
+}
 
+int myClose(int fd, int con){
+    Message* message = (Message*)malloc(sizeof(Message));
 
+    if(close(fd)){
+        printf("server failed to close file\n");
+        messsage -> return_code = -1;
+        if(writeMessage(con, message)){
+            printf("server did not write to client\n");
+            return -2;
+        }
+        return -1;
+    }else{
+        message -> return_code = 0;
+        if(writeMessage(con, message)){
+            printf("server did not write to client\n");
+            return -2;
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        //remove fd from linked list
+    }
+}
 
 
 

@@ -13,8 +13,10 @@ typedef struct
   int filename_len;
   char* buffer;
   char* filename;
+  int bytes_written;
+  int return_code;
 
-}Message;
+} Message;
 
 
 int writeMessage(int fd, Message m);
