@@ -55,8 +55,12 @@ int netopen(const char* pathname, int flags){
   m.client_access = access_mode;
   file_len = strlen(pathname);
   m.filename_len = file_len;
+  m.buffer_len = -1;
+
+  file_name = (char*)malloc(sizeof(char) * (file_len + 1));
   strcpy(file_name, pathname);
   m.filename = file_name;
+  printf("%s\n", m.filename);
 
   //send this shit and read that shit
   if (writeMessage(socket_fd, m) < 0 ){

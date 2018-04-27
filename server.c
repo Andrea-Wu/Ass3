@@ -115,6 +115,7 @@ int server(char* port){
        printf("1\n");
        int didRead = readMessage(con -> fd, &message ); ///right?
         printf("2\n");
+        printf(" msg str = %s\n", message);
        MessageType messType = message.message_type;
        if(messType == Open){
        printf("3\n");
@@ -243,14 +244,18 @@ int myOpen(char* filename, Access access, int mode, int con){
     }
 */
     fd = open(filename, mode);
-
+    printf("a     %ld \n", filename);
     addFd(fd, mode, filename, access);
-
+    printf("b\n");
     Message* message = (Message*)malloc(sizeof(Message));
+    printf("c\n");
     message -> fd = fd;
+    printf("d\n");
     int didWrite = writeMessage(con, *message);
+    printf("e\n");
 
     if(didWrite){
+    printf("f\n");
         //did not write
         printf("server did not write to socket\n");
         return -1;
@@ -260,16 +265,20 @@ int myOpen(char* filename, Access access, int mode, int con){
 }
 
 int hashFunction(char* str){
+    printf("%ld\n", str);
     int strLen = strlen(str);
-
+    printf("h1\n");
     int bucket = 0; 
-
+    printf("h2\n");
     int i = 0;
+    printf("h3\n");
     while(i < strLen){
         bucket = bucket + str[i];
+        printf("h4 %d \n", i);
         i++;
     }
-
+    
+    printf("h5\n");
     bucket = bucket % 100;
     return bucket;
 }
@@ -279,16 +288,22 @@ pthread_mutex_t lockA;
 void addFd( int fd, int mode, char* filename, Access aMode){
     
     int bucket = hashFunction(filename);
+    printf("ass1\n");
 
     //create node to insert
     node* newNode = (node*)malloc(sizeof(node));
+    printf("ass2\n");
     newNode -> fd = fd;
 
     if(mode == O_RDONLY || mode == O_RDWR){
         newNode -> read = 1;
+    
     }else{
         newNode -> read = 0;
     }
+
+    printf("ass3\n");
+
     if(mode == O_WRONLY || mode == O_RDWR){
         newNode -> write = 1;
     }else{
@@ -296,23 +311,29 @@ void addFd( int fd, int mode, char* filename, Access aMode){
     }
 
     newNode -> aMode = aMode;
-
+    printf("ass4\n");
     pthread_mutex_lock(&lockA);
 
     //find sNode list corresp. to filename
     sNode* tmp = hashtable[bucket];
-
+    printf("phantasmagoria\n");
     //iterate thru sNode list until string is found
     while(tmp){
+            printf("fanta %s hehe\n", filename);
+            
+
         if(strcmp(tmp -> str, filename) == 0){
+            printf("fantasy\n");
             break;
         }
         
         tmp = tmp -> next;
     }
-
+    printf("leguminous\n");
     if(!tmp){ //tmp is null, string does not exist yet in hash table
         tmp = (sNode*)malloc(sizeof(sNode));
+        printf("pulmonary gland\n");
+        tmp -> str = filename;
 
         //insert into hash, randomly...
         sNode* tmp2 = hashtable[bucket];

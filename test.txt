@@ -1,0 +1,47 @@
+=================================================================
+==18581== ERROR: AddressSanitizer: heap-buffer-overflow on address 0x60040000dff0 at pc 0x7f636488019f bp 0x7ffddd8c8c70 sp 0x7ffddd8c8c18
+WRITE of size 4 at 0x60040000dff0 thread T0
+    #0 0x7f636488019e (/usr/lib64/libasan.so.0.0.0+0xb19e)
+    #1 0x7f6364881053 (/usr/lib64/libasan.so.0.0.0+0xc053)
+    #2 0x7f6364881179 (/usr/lib64/libasan.so.0.0.0+0xc179)
+    #3 0x4017ad (/ilab/users/ayw19/systems/Ass3/server+0x4017ad)
+    #4 0x401d87 (/ilab/users/ayw19/systems/Ass3/server+0x401d87)
+    #5 0x4017f4 (/ilab/users/ayw19/systems/Ass3/server+0x4017f4)
+    #6 0x7f6363fb5c04 (/usr/lib64/libc-2.17.so+0x21c04)
+    #7 0x4010e8 (/ilab/users/ayw19/systems/Ass3/server+0x4010e8)
+0x60040000dff3 is located 0 bytes to the right of 3-byte region [0x60040000dff0,0x60040000dff3)
+allocated by thread T0 here:
+    #0 0x7f636488b129 (/usr/lib64/libasan.so.0.0.0+0x16129)
+    #1 0x40175f (/ilab/users/ayw19/systems/Ass3/server+0x40175f)
+    #2 0x401d87 (/ilab/users/ayw19/systems/Ass3/server+0x401d87)
+    #3 0x4017f4 (/ilab/users/ayw19/systems/Ass3/server+0x4017f4)
+    #4 0x7f6363fb5c04 (/usr/lib64/libc-2.17.so+0x21c04)
+Shadow bytes around the buggy address:
+  0x0c00ffff9ba0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c00ffff9bb0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c00ffff9bc0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c00ffff9bd0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c00ffff9be0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+=>0x0c00ffff9bf0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa[03]fa
+  0x0c00ffff9c00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c00ffff9c10: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c00ffff9c20: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c00ffff9c30: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x0c00ffff9c40: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:     fa
+  Heap righ redzone:     fb
+  Freed Heap region:     fd
+  Stack left redzone:    f1
+  Stack mid redzone:     f2
+  Stack right redzone:   f3
+  Stack partial redzone: f4
+  Stack after return:    f5
+  Stack use after scope: f8
+  Global redzone:        f9
+  Global init order:     f6
+  Poisoned by user:      f7
+  ASan internal:         fe
+==18581== ABORTING
