@@ -110,9 +110,9 @@ int server(char* port){
         }
 
        // printf("accepted\n");
-        printf("what\n");
+        printf("server.c: what\n");
        Message message;
-       printf("1\n");
+       printf("server.c: 1\n");
        int didRead = readMessage(con -> fd, &message ); ///right?
         printf("2\n");
         printf(" msg str = %s\n", message);
@@ -126,7 +126,7 @@ int server(char* port){
             
        }else if(messType == Write){
 
-       }else if(messType = Close){
+       }else if(messType == Close){
 
        }else{
             printf("this broke\n");
@@ -249,7 +249,7 @@ int myOpen(char* filename, Access access, int mode, int con){
     printf("b\n");
     Message* message = (Message*)malloc(sizeof(Message));
     printf("c\n");
-    message -> fd = fd;
+    message -> fd = 1 * fd;
     printf("d\n");
     int didWrite = writeMessage(con, *message);
     printf("e\n");
@@ -356,8 +356,8 @@ int myRead(int fd, int con, int numBytes){
 
     Message* message = (Message*)malloc(sizeof(Message));
     message -> buffer = buffer;
-    message -> buffer_len = numBytes +1;
-
+    message -> buffer_len = numBytes;
+    message -> filename_len = -1;
 
     if(writeMessage(con, *message)){
         //did not write

@@ -12,12 +12,12 @@ int writeMessage(int fd, Message m)
     printf("Socket not working");
     return -1;
   }
-
+    printf("util.c: 15");
   if (fprintf(sock, "%d %d %d %d %d %d %d %d ", m.message_type, m.mode, m.client_access, m.fd, m.buffer_len, m.filename_len, m.return_code, m.bytes_written) < 0){
     printf("Message failed to send1\n");
     return -1;
   }
-
+    printf("util.c: 20");
   if(m.buffer_len > 0){
     if(fprintf(sock, "%s ", m.buffer)<0){
       printf("Message failed to send2\n");
@@ -26,7 +26,7 @@ int writeMessage(int fd, Message m)
   }
 
 
-  
+  printf("util.c: 29");
   if(m.filename_len > 0){ 
     if(fprintf(sock, "%s ", m.filename)<0){
       printf("Message failed to send3\n");

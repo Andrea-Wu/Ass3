@@ -43,8 +43,7 @@ int netopen(const char* pathname, int flags){
   int socket_fd,file_len;
   char* file_name;
   Message m;
-  Message *response;
-  response = (Message*)malloc(sizeof(Message));
+  Message *response = (Message*)malloc(sizeof(Message));
   
   //establish connection
   socket_fd = openCon();
@@ -72,16 +71,46 @@ int netopen(const char* pathname, int flags){
     return -1;
   }
 
-  if (response->fd < 0){
+  if (response->fd <  0){
     printf("Failed to open file");
     return -1;
   }
-  
+ 
+ //make fd negative
+ response -> fd = (response -> fd) * -1;
   close(socket_fd);
   return response->fd;
 }
 
 ssize_t netread(int fildes, void* buf, size_t nbyte){
+    int socket_fd, file_len;
+    char* file_name;
+    Message m;
+    Message *response = (Message*)malloc(sizeof(Message));
+
+    printf("read1\n");
+    //establish connection
+    socket_fd = openCon();
+
+    m.message_type = Read;
+    m.fd = fildes;
+ //   m.buffer = buf; //probably don't need this
+   // m.buffer_len = nbyte;
+    m.filename_len = -1;
+    printf("read2\n");
+    if(writeMessage(socket_fd, m) < 0){
+        printf("YOU didn't write!\n");
+        return -1;
+    }
+    printf("read3\n");
+    if(readMessage(socket_fd, response) < 0){
+        printf("Didn't read!\n");
+        return -1;
+    }
+   printf("read4\n"); 
+    printf("number of bytes read: %d\n", response -> fd);
+    printf("%s\n", response -> buffer);
+    close(socket_fd);
   return 0;
 }
 
