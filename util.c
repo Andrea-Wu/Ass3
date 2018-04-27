@@ -13,21 +13,23 @@ int writeMessage(int fd, Message m)
     return -1;
   }
 
-  if (fprintf(sock, "%d %d %d %d %d %d ", m.message_type, m.mode, m.client_access, m.fd, m.buffer_len, m.filename_len) < 0){
-    printf("Message failed to send");
+  if (fprintf(sock, "%d %d %d %d %d %d %d %d", m.message_type, m.mode, m.client_access, m.fd, m.buffer_len, m.filename_len, m.return_code, m.bytes_written) < 0){
+    printf("Message failed to send1\n");
     return -1;
   }
 
   if(m.buffer_len > 0){
     if(fprintf(sock, "%s ", m.buffer)<0){
-      printf("Message failed to send");
+      printf("Message failed to send2\n");
       return -1;
     }
   }
+
+
   
   if(m.filename_len > 0){ 
     if(fprintf(sock, "%s ", m.filename)<0){
-      printf("Message failed to send");
+      printf("Message failed to send3\n");
       return -1;
     }
   }
@@ -44,21 +46,21 @@ int readMessage(int fd, Message* m)
     printf("Socket not working");
     return -1;
   }
-  if(fscanf(sock, "%d %d %d %d %d %d", &m->message_type, &m->mode, &m->client_access, &m->fd, &m->buffer_len, &m->filename_len)<0){
-    printf("Failed to receive message");
+  if(fscanf(sock, "%d %d %d %d %d %d %d %d", &m->message_type, &m->mode, &m->client_access, &m->fd, &m->buffer_len, &m->filename_len, &m->return_code, &m->bytes_written)<0){
+    printf("Failed to receive message: a\n");
     return -1;
   } 
   if(m->buffer_len > 0){
     m->buffer = (char*)malloc(m->buffer_len * (sizeof(char))); 
     if(fscanf(sock, "%s", m->buffer)<0){
-      printf("Failed to receive message");
+      printf("Failed to receive message: b\n");
       return -1;
     }
   }
   if(m->filename_len > 0){
     m->filename = (char*)malloc(m->filename_len*(sizeof(char)));
     if(fscanf(sock, "%s", m->filename)<0){
-      printf("Failed to receive message");
+      printf("Failed to receive message: c\n");
       return -1;
     }
   }

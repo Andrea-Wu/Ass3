@@ -3,8 +3,7 @@
 typedef enum {Unrestricted, Exclusive, Transaction} Access;
 typedef enum {Open, Read, Write, Close, Error, Success, ReadResponse, OpenResponse} MessageType;
 
-typedef struct
-{
+typedef struct message{
   MessageType message_type;
   int mode;
   Access client_access;
