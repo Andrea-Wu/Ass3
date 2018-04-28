@@ -122,7 +122,7 @@ ssize_t netread(int fildes, void* buf, size_t nbyte){
     if(response -> buffer){
         printf("%s\n", response -> buffer); //response -> buffer is null, why?
     }else{
-        printf("libmetfiles.c: did not read in stringn");
+        printf("libmetfiles.c: did not read in string\n");
     }
     close(socket_fd);
   return 0;

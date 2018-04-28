@@ -51,6 +51,8 @@ int main(){ //this is the server
     hashtable = (sNode**)malloc(sizeof(sNode*) * 100);  
 
     //create hash table that hashes on file descriptors
+    //no chaining, for now
+
     hashtable_fd = (node**)malloc(sizeof(node*) * 1000);
     //assume file descriptors don't exceed 1000?
 
@@ -362,6 +364,7 @@ int hashFunction(char* str){
 }
 
 pthread_mutex_t lockA;
+pthread_mutex_t lockC;
 
 void addFd( int fd, int mode, char* filename, Access aMode){
     
@@ -370,6 +373,8 @@ void addFd( int fd, int mode, char* filename, Access aMode){
     //create node to insert
     node* newNode = (node*)malloc(sizeof(node));
     newNode -> fd = fd;
+
+    //this is stupid 
 
     if(mode == O_RDONLY || mode == O_RDWR){
         newNode -> read = 1;
@@ -386,6 +391,8 @@ void addFd( int fd, int mode, char* filename, Access aMode){
     }
 
     newNode -> aMode = aMode;
+
+    //MUTEX: insert into hashtable
     pthread_mutex_lock(&lockA);
 
     //find sNode list corresp. to filename
@@ -411,16 +418,54 @@ void addFd( int fd, int mode, char* filename, Access aMode){
     }
 
 
-    //fdList should not be null
+    //ASSUMPTION: fdList should not be null
     node* tmp3 = tmp -> fds;
     tmp -> fds = newNode;
     newNode -> next = tmp3;
 
     pthread_mutex_unlock(&lockA);
+
+
+    //MUTEX: insert into hashtable_fd
+    pthread_mutex_lock(&lockC);
+    
+    //IMPORTANT: the assumption that file descriptors do not exceed 1000
+
+    //IMPLEMENTATION: instead of storing an actual node in hash table, 
+    //just store a pointer to the node that's in the other hastable
+        //POTENTIAL PROBLEMS: ???
+        //BENEFITS: don't need to free as many nodes
+    hashtable_fd[fd] = newNode;
+
+
+    pthread_mutex_unlock(&lockC);
+
 }
 
 int myRead(int fd, int con, int numBytes){
     fd = fd * -1;
+
+    Message* message = (Message*)malloc(sizeof(Message));
+    message -> filename_len = -1;
+
+    //IMPLEMENTATION: check hashtable_fd for file descriptor permissions
+    node* fd_node = hashtable_fd[fd];
+    if(fd_node -> read == 0){
+        printf("server.c: fd does not have read permission\n");
+
+        message -> buffer_len = -1;
+        message -> message_type = Error;
+        message -> return_code = errno;
+
+        if(writeMessage(con, *message)){
+            printf("server.c: permission error AND msg to client failed\n");
+        }else{
+            printf("server.c: permission failed err sent to client\n");
+        }
+        return -1;   
+    }
+
+
     printf("server: 359    fd is %d, numbytes is %d\n", fd, numBytes);
     char* buffer = (char*)malloc(sizeof(char) * (numBytes + 1));
     int bytesRead = read(fd, buffer, numBytes);
@@ -429,7 +474,7 @@ int myRead(int fd, int con, int numBytes){
         printf("server: 362\n");
         printf("server.c: 361 %d bytes read, %s\n", bytesRead, buffer);
     }
-    Message* message = (Message*)malloc(sizeof(Message));
+
     if (bytesRead == -1){
       message->message_type = Error;
       message->return_code = errno;
@@ -437,7 +482,6 @@ int myRead(int fd, int con, int numBytes){
       message->message_type = ReadResponse;
       message -> buffer = buffer;
       message -> buffer_len = bytesRead;
-      message -> filename_len = -1;
       message -> bytes_written = bytesRead;
     }  
 
@@ -455,6 +499,13 @@ int myWrite(int fd, int con, char* writeMe, int numBytes){
 
     //make fd positive
     fd = fd * -1;
+
+    //IMPLEMENTATION: check hashtable_fd for file descriptor permissions
+    node* fd_node = hashtable_fd[fd];
+    if(fd_node -> write == 0){
+        printf("server.c: fd does not have write permissions\n");
+        return -1;
+    }
 
     printf("server.c: 466  fd= %d, str= %s, numBytes= %d\n", fd, writeMe, numBytes);
     int bytesWritten = write(fd, writeMe, numBytes); 
