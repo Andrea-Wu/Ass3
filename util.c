@@ -19,7 +19,7 @@ int writeMessage(int fd, Message m)
   }
     printf("util.c: 20");
   if(m.buffer_len > 0){
-    if(fprintf(sock, "%s ", m.buffer)<0){
+    if(fprintf(sock, "%s\0", m.buffer)<0){
       printf("Message failed to send2\n");
       return -1;
     }
