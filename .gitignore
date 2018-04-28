@@ -4,3 +4,4 @@
 *.swp
 server
 client
+.nfs*
