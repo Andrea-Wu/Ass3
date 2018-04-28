@@ -95,7 +95,13 @@ ssize_t netread(int fildes, void* buf, size_t nbyte){
     m.message_type = Read;
     m.fd = fildes;
  //   m.buffer = buf; //probably don't need this
-   // m.buffer_len = nbyte;
+    m.buffer_len = nbyte;
+
+//i'm not sure how you want this, temp sending length we want written as buffer_len
+//and recieveing bytes actually read witn bytes_written
+
+    
+    
     m.filename_len = -1;
     printf("read2\n");
     if(writeMessage(socket_fd, m) < 0){
@@ -107,15 +113,56 @@ ssize_t netread(int fildes, void* buf, size_t nbyte){
         printf("Didn't read!\n");
         return -1;
     }
-   printf("read4\n"); 
-    printf("number of bytes read: %d\n", response -> fd);
-    printf("%s\n", response -> buffer);
+    printf("read4\n"); 
+    printf("number of bytes read: %d\n", response -> bytes_written);
+
+    if(response -> buffer){
+        printf("%s\n", response -> buffer); //response -> buffer is null, why?
+    }
     close(socket_fd);
   return 0;
 }
 
 
 ssize_t netwrite(int fildes, const void* buf, size_t nbyte){
+   int socket_fd, file_len;
+    char* file_name;
+    Message m;
+    Message *response = (Message*)malloc(sizeof(Message));
+
+    //copy??
+    char* buffer = (char*)malloc(sizeof(char) * (nbyte +1));
+    strcpy(buffer, buf);
+
+    //establish connection
+    socket_fd = openCon();
+
+    m.message_type = Write;
+    m.fd = fildes;
+    m.buffer = buffer; //this might break
+    m.buffer_len = nbyte;
+    m.filename_len = -1;
+
+    //this might not be necessary
+    //char* buffer = (char*)malloc(sizeof(char)*(nbyte + 1))
+    
+    m.filename_len = -1;
+    if(writeMessage(socket_fd, m) < 0){
+        printf("YOU didn't write!\n");
+        return -1;
+    }
+    if(readMessage(socket_fd, response) < 0){
+        printf("Didn't read!\n");
+        return -1;
+    }
+    printf("read4\n"); 
+    printf("number of bytes read: %d\n", response -> bytes_written);
+
+    if(response -> buffer){
+        printf("%s\n", response -> buffer); //response -> buffer is null, why?
+    }
+    close(socket_fd);
+ 
   return 0;
 }
 
