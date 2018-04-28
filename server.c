@@ -25,7 +25,8 @@ typedef struct node{
     struct node* next;
 } node;
 
-sNode** hashtable;  //global              
+sNode** hashtable;  //global hash on filenames    
+node** hashtable_fd; //global hash on fds
 
 
 #define BACKLOG 5
@@ -46,8 +47,16 @@ int hashFunction(char* str);
 
 int main(){ //this is the server
     
-    //create hash table 
+    //create hash table that hashes on file names
     hashtable = (sNode**)malloc(sizeof(sNode*) * 100);  
+
+    //create hash table that hashes on file descriptors
+    hashtable_fd = (node**)malloc(sizeof(node*) * 1000);
+    //assume file descriptors don't exceed 1000?
+
+    FILE*  pidf = fopen("pid.txt", "w");
+    fprintf(pidf,"my pid: %d\n", getpid());
+    fclose(pidf);
 
     server(PORT);
     return 0;
@@ -127,9 +136,12 @@ int server(char* port){
             printf("server.c: 126\n");
        }else if(messType == Read){
             if(myRead(message.fd, con -> fd, message.bytes_written)){
-                printf("server.c: 129 err did not read from file");
+                printf("server.c: 129 myRead did not work\n");
             }
        }else if(messType == Write){
+            if(myWrite(message.fd, con-> fd, message.buffer, strlen(message.buffer) )){ 
+                printf("server.c: 134 myWrite did not work\n");
+            }
 
        }else if(messType == Close){
 
@@ -448,10 +460,15 @@ int myRead(int fd, int con, int numBytes){
 
 int myWrite(int fd, int con, char* writeMe, int numBytes){
 
+    //make fd positive
+    fd = fd * -1;
+
+    printf("server.c: 466  fd= %d, str= %s, numBytes= %d\n", fd, writeMe, numBytes);
     int bytesWritten = write(fd, writeMe, numBytes); 
 
     if(bytesWritten == -1){
-        printf("server did not write to file\n");
+        printf("server did not write to fd %d\n", fd);
+        perror("err");
         return 0;
     }
 

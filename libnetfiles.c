@@ -88,7 +88,6 @@ ssize_t netread(int fildes, void* buf, size_t nbyte){
     Message m;
     Message *response = (Message*)malloc(sizeof(Message));
 
-    printf("read1\n");
     //establish connection
     socket_fd = openCon();
 
@@ -108,22 +107,22 @@ ssize_t netread(int fildes, void* buf, size_t nbyte){
     m.filename_len = -1;
     printf("libnetfiles.c: netRead, 107\n");
     if(writeMessage(socket_fd, m) < 0){
-        printf("libnetfiles.c: 109 libnetfiles.c: 107 YOU didn't write!\n");
+        printf("libnetfiles.c: you did not send mesg to server!\n");
         return -1;
     }
-    printf("libnetfiles.c: netRead, 112 \n");
+    printf("libnetfiles.c: successfully sent msg to server\n");
     if(readMessage(socket_fd, response) < 0){
-        printf("libnetfiles.c: 114 Didn't read!\n");
+        printf("libnetfiles.c: Didn't get response from server\n");
         return -1;
     }
-    printf("read4\n"); 
+    printf("libnetfiles.c: netread got response from server\n"); 
     printf("libnetfiles.c: netRead 118 number of bytes read: %d\n", response -> bytes_written);
 
 
     if(response -> buffer){
         printf("%s\n", response -> buffer); //response -> buffer is null, why?
     }else{
-        printf("your str dind't read\n");
+        printf("libmetfiles.c: did not read in stringn");
     }
     close(socket_fd);
   return 0;
@@ -146,28 +145,27 @@ ssize_t netwrite(int fildes, const void* buf, size_t nbyte){
     m.client_access = access_mode;
     m.message_type = Write;
     m.fd = fildes;
-    m.buffer = buffer; //this might break
+    m.buffer = buffer; 
     m.buffer_len = nbyte;
+    m.bytes_written = nbyte;
     m.filename_len = -1;
 
-    //this might not be necessary
-    //char* buffer = (char*)malloc(sizeof(char)*(nbyte + 1))
-    
-    m.filename_len = -1;
+    printf("libnetfiles.c message data: nbyte=%d, buffer = %s\n", m.buffer_len, m.buffer);
+
     if(writeMessage(socket_fd, m) < 0){
-        printf("libnetfiles.c: 150 YOU didn't write!\n");
+        printf("libnetfiles.c: message failed to send to server!\n");
         return -1;
     }
+    printf("libnetfiles.c: message sent to server\n");
+
     if(readMessage(socket_fd, response) < 0){
-        printf("libnetfiles.c: 154 Didn't read!\n");
+        printf("libnetfiles.c: no response from server!\n");
         return -1;
     }
-    printf("libnetfiles.c: 157 read4\n"); 
     printf("libnetfiles.c: 158 number of bytes read: %d\n", response -> bytes_written);
-    printf("libnetfiles.c: 161 string read  |%s |", response -> buffer);
 
     if(response -> buffer){
-        printf("%s\n", response -> buffer); //response -> buffer is null, why?
+        printf("libnetfiles.c: reponse str %s\n", response -> buffer); //response -> buffer is null, why?
     }
     close(socket_fd);
  
@@ -191,15 +189,15 @@ int netclose(int fd){
   m.buffer_len = -1;
   m.filename_len = -1;
   if(writeMessage(socket_fd, m) < 0){
-    printf("libnetfiles.c: 184 YOU didn't write!\n");
+    printf("libnetfiles.c: 184 YOU didn't write to server!\n");
     return -1;
   }
   if(readMessage(socket_fd, response) < 0){
-    printf("Didn't read!\n");
+    printf("libnetfiles.c: Didn't get response from server!\n");
     return -1;
   }
   close(socket_fd);
-  printf("Successfully closed!\n");
+  printf("libnetfiles.c: Successfully closed server connection!\n");
   return 0;
 }
 
