@@ -49,6 +49,7 @@ int netopen(const char* pathname, int flags){
   socket_fd = openCon();
   
   //let's make this fucking message!
+  m.client_access = access_mode;
   m.message_type = Open;
   m.mode = flags;
   m.client_access = access_mode;
@@ -91,6 +92,7 @@ ssize_t netread(int fildes, void* buf, size_t nbyte){
     //establish connection
     socket_fd = openCon();
 
+    m.client_access = access_mode;
     m.message_type = Read;
     m.fd = fildes;
  //   m.buffer = buf; //probably don't need this
@@ -136,6 +138,7 @@ ssize_t netwrite(int fildes, const void* buf, size_t nbyte){
     //establish connection
     socket_fd = openCon();
 
+    m.client_access = access_mode;
     m.message_type = Write;
     m.fd = fildes;
     m.buffer = buffer; //this might break
@@ -174,7 +177,8 @@ int netclose(int fd){
   
   //establish connection
   socket_fd = openCon();
-
+  
+  m.client_access = access_mode; 
   m.message_type = Close;
   m.fd = fd;
   //m.buffer = buf; //probably don't need this
