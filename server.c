@@ -101,49 +101,61 @@ int server(char* port){
     freeaddrinfo(result);
 
     if(!r){ //no successful socket bind
-        printf("error2");
+        printf("error: kill server process\n");
         return -1;
     }
 
     //mySocket is bound & listening
-    printf("Wainting for connection\n");
+    printf("server.c: Wainting for connection\n");
 
     con = (connection*)malloc(sizeof(connection));
     for(;;){
         con -> addr_len = sizeof(struct sockaddr_storage);
-        printf("waiting to accept\n");
+        printf("server.c: waiting to accept\n");
         con -> fd = accept(mySocket, (struct sockaddr *) &con -> addr, &con ->addr_len);
       
         if(con -> fd == -1){
-             printf("did not accept\n");
+             printf("server.c: connection from client failed\n");
              continue;
+        }else{
+            printf("server.c: connection from client successful\n");
         }
 
        // printf("accepted\n");
-        printf("server.c: what\n");
        Message message;
-       printf("server.c: 1\n");
        if(readMessage(con -> fd, &message )){
-          printf("server.c: 117 initial msg not read");  
-       }///right?
-        printf("server.c: 117\n");
-       // printf("server.c: 118  msg str = %s\n", message -> );
+          printf("server.c: initial msg from client not read\n");  
+       }else{
+            printf("server.c: initial message from client read\n");
+        }
+
+
        MessageType messType = message.message_type;
        if(messType == Open){
-       printf("server.c: 123\n");
+            printf("server.c: client wants to Open\n");
             //call open
-            myOpen(message.filename, message.client_access, message.mode, con -> fd);
-            printf("server.c: 126\n");
+            if(myOpen(message.filename, message.client_access, message.mode, con -> fd)){
+                printf("server.c: myOpen failed\n");
+            }else{
+                printf("server.c: myOpen successful\n");
+            }
        }else if(messType == Read){
+            printf("server.c: client wants to read\n");
             if(myRead(message.fd, con -> fd, message.bytes_written)){
-                printf("server.c: 129 myRead did not work\n");
+                printf("server.c: myRead failed\n");
+            }else{
+                printf("server.c: myRead successful");
             }
        }else if(messType == Write){
+            printf("server.c: client wants to write\n");
             if(myWrite(message.fd, con-> fd, message.buffer, strlen(message.buffer) )){ 
-                printf("server.c: 134 myWrite did not work\n");
+                printf("server.c: myWrite failed\n");
+            }else{
+                printf("server.c: myWrite successful\n");
             }
 
        }else if(messType == Close){
+            printf("server.c: client wants to close\n");
 
        }else{
             printf("this broke\n");
@@ -320,41 +332,31 @@ int myOpen(char* filename, Access access, int mode, int con){
      pthread_mutex_unlock(&lockB);
 
     fd = open(filename, mode);
-    printf("server.c 247 a     %ld \n", filename);
     addFd(fd, mode, filename, access);
-    printf("server.c 248 \n");
     Message* message = (Message*)malloc(sizeof(Message));
-    printf("server.c 251\n");
     message -> fd = 1 * fd;
-    printf("server.c: 253d\n");
     int didWrite = writeMessage(con, *message);
-    printf("server.c: 255 e\n");
 
     if(didWrite){
-    printf("server.c: 258 f\n");
         //did not write
-        printf("server did not write to socket\n");
+        printf("server did not write to client\n");
         return -1;
     }
+
+    return 0;
 
 
 }
 
 int hashFunction(char* str){
-    printf("server.c: 268 %ld\n", str);
     int strLen = strlen(str);
-    printf("server.c: 270 h1\n");
     int bucket = 0; 
-    printf("server.c: 272 h2\n");
     int i = 0;
-    printf("server.c: 274 h3\n");
     while(i < strLen){
         bucket = bucket + str[i];
-        printf("server.c: 277 h4 %d \n", i);
         i++;
     }
     
-    printf("server.c: 281h5\n");
     bucket = bucket % 100;
     return bucket;
 }
@@ -364,11 +366,9 @@ pthread_mutex_t lockA;
 void addFd( int fd, int mode, char* filename, Access aMode){
     
     int bucket = hashFunction(filename);
-    printf("server.c: 291 ass1\n");
 
     //create node to insert
     node* newNode = (node*)malloc(sizeof(node));
-    printf("server.c: 295 ass2\n");
     newNode -> fd = fd;
 
     if(mode == O_RDONLY || mode == O_RDWR){
@@ -378,7 +378,6 @@ void addFd( int fd, int mode, char* filename, Access aMode){
         newNode -> read = 0;
     }
 
-    printf("server.c: 305 ass3\n");
 
     if(mode == O_WRONLY || mode == O_RDWR){
         newNode -> write = 1;
@@ -387,28 +386,22 @@ void addFd( int fd, int mode, char* filename, Access aMode){
     }
 
     newNode -> aMode = aMode;
-    printf("serrver.c : 314 ass4\n");
     pthread_mutex_lock(&lockA);
 
     //find sNode list corresp. to filename
     sNode* tmp = hashtable[bucket];
-    printf("server.c: 319 hantasmagoria\n");
     //iterate thru sNode list until string is found
     while(tmp){
-            printf("server.c: 322 fanta %s hehe\n", filename);
             
 
         if(strcmp(tmp -> str, filename) == 0){
-            printf("server.c: 326 fantasy\n");
             break;
         }
         
         tmp = tmp -> next;
     }
-    printf("server.c: 332 leguminous\n");
     if(!tmp){ //tmp is null, string does not exist yet in hash table
         tmp = (sNode*)malloc(sizeof(sNode));
-        printf("server.c: 335 pulmonary gland\n");
         tmp -> str = filename;
 
         //insert into hash, randomly...
