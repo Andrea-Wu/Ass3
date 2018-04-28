@@ -1,6 +1,6 @@
 TARGET1 = server
 TARGET2 = test_client
-OBJECTS1 = server.o
+OBJECTS1 = server.o util.o
 OBJECTS2 = libnetfiles.o util.o test_client.o
 FLAGS = -g -fsanitize=address -lm
 

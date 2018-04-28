@@ -1,4 +1,8 @@
+#ifndef UTIL_H_
 #define UTIL_H_
+
+#define PORT "8821"
+#define HOST "strategy.cs.rutgers.edu"
 
 typedef enum {Unrestricted, Exclusive, Transaction} Access;
 typedef enum {Open, Read, Write, Close, Error, Success, ReadResponse, OpenResponse} MessageType;
@@ -20,3 +24,5 @@ typedef struct message{
 
 int writeMessage(int fd, Message m);
 int readMessage(int fd, Message* m);
+
+#endif

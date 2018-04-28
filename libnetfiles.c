@@ -8,7 +8,6 @@
 #include <errno.h>
 #include "util.h"
 
-#define PORT "8820"
 
 struct addrinfo* hostinfo;
 Access access_mode;
@@ -59,7 +58,6 @@ int netopen(const char* pathname, int flags){
   file_name = (char*)malloc(sizeof(char) * (file_len + 1));
   strcpy(file_name, pathname);
   m.filename = file_name;
-  printf("%s\n", m.filename);
 
   //send this shit and read that shit
   if (writeMessage(socket_fd, m) < 0 ){
@@ -94,7 +92,7 @@ ssize_t netread(int fildes, void* buf, size_t nbyte){
 
     m.message_type = Read;
     m.fd = fildes;
- //   m.buffer = buf; //probably don't need this
+   // m.buffer = buf; //probably don't need this
    // m.buffer_len = nbyte;
     m.filename_len = -1;
     printf("read2\n");
@@ -109,7 +107,6 @@ ssize_t netread(int fildes, void* buf, size_t nbyte){
     }
    printf("read4\n"); 
     printf("number of bytes read: %d\n", response -> fd);
-    printf("%s\n", response -> buffer);
     close(socket_fd);
   return 0;
 }
@@ -121,7 +118,29 @@ ssize_t netwrite(int fildes, const void* buf, size_t nbyte){
 
 
 int netclose(int fd){
-     
+  int socket_fd, file_len;
+  char* file_name;
+  Message m;
+  Message *response = (Message*)malloc(sizeof(Message));
+  
+  //establish connection
+  socket_fd = openCon();
+
+  m.message_type = Close;
+  m.fd = fd;
+  //m.buffer = buf; //probably don't need this
+  m.buffer_len = -1;
+  m.filename_len = -1;
+  if(writeMessage(socket_fd, m) < 0){
+    printf("YOU didn't write!\n");
+    return -1;
+  }
+  if(readMessage(socket_fd, response) < 0){
+    printf("Didn't read!\n");
+    return -1;
+  }
+  close(socket_fd);
+  printf("Successfully closed!\n");
   return 0;
 }
 
@@ -146,7 +165,7 @@ int openCon(){
     printf("Successfully connected\n");
     return socket_fd;
   }else{
-    printf("connection Failed\n");
+   printf("connection Failed\n");
     return -1;
   }
   

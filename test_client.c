@@ -7,18 +7,18 @@
 #include <netinet/in.h>
 #include "libnetfiles.h"
 #include <fcntl.h>
+#include "util.h"
 
 int main(){
   int status;
-  status = netserverinit("decorator.cs.rutgers.edu");
-  printf("%d\n", status);
+  status = netserverinit(HOST);
   int h =  netopen("dir", O_RDONLY);
-  printf("%d\n", h);
+  printf("The fd we got back from the server:%d\n", h);
 
-    char* buf = (char*)malloc(sizeof(char) * 10);
+  char* buf = (char*)malloc(sizeof(char) * 10);
   int n = netread(h, buf, 9);
-    printf("%s\n", buf);
-    printf("%d\n", n);
+  printf("%s\n", buf);
+  printf("%d\n", n);
   //netwrite();
   return 0;  
 }

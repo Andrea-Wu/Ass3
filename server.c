@@ -5,10 +5,10 @@
 #include <netdb.h>
 #include <string.h>
 #include <pthread.h>
-#include "util.c"
+#include "util.h"
 #include <sys/types.h>
 #include <fcntl.h>
-
+#include <errno.h>
 
 typedef struct sNode{
     char* str;
@@ -48,7 +48,7 @@ int main(){ //this is the server
     //create hash table 
     hashtable = (sNode**)malloc(sizeof(sNode*) * 100);  
 
-    server("8820");
+    server(PORT);
     return 0;
 }
 
@@ -118,12 +118,14 @@ int server(char* port){
         printf(" msg str = %s\n", message);
        MessageType messType = message.message_type;
        if(messType == Open){
-       printf("3\n");
-            //call open
-            myOpen(message.filename, message.client_access, message.mode, con -> fd);
-            printf("4\n");
+         printf("3\n");
+         //call open
+         myOpen(message.filename, message.client_access, message.mode, con -> fd);
+         printf("4\n");
        }else if(messType == Read){
-            
+         printf("Server:I get it man, you wanna read\n");
+         myRead(message.fd, con -> fd, message.buffer_len);
+         printf("Server:Here is your shit.\n");         
        }else if(messType == Write){
 
        }else if(messType == Close){
@@ -352,12 +354,19 @@ void addFd( int fd, int mode, char* filename, Access aMode){
 
 int myRead(int fd, int con, int numBytes){
     char* buffer = (char*)malloc(sizeof(char) * (numBytes + 1));
-    read(fd, buffer, numBytes);
-
+    int byte_read = read(fd, buffer, numBytes);
+   
     Message* message = (Message*)malloc(sizeof(Message));
     message -> buffer = buffer;
-    message -> buffer_len = numBytes;
+    message -> buffer_len = byte_read;
     message -> filename_len = -1;
+    if (byte_read == -1){
+      message->message_type = Error;
+      message->return_code = errno;
+    }else{
+      message->message_type = ReadResponse;
+    }  
+
 
     if(writeMessage(con, *message)){
         //did not write
@@ -375,7 +384,7 @@ int myWrite(int fd, int con, char* writeMe, int numBytes){
 
     if(bytesWritten == -1){
         printf("server did not write to file\n");
-        return;
+        return 0;
     }
 
     Message* message = (Message*)malloc(sizeof(Message));
