@@ -2,7 +2,7 @@
 #define UTIL_H_
 
 #define PORT "8821"
-#define HOST "strategy.cs.rutgers.edu"
+#define HOST "decorator.cs.rutgers.edu"
 
 typedef enum {Unrestricted, Exclusive, Transaction} Access;
 typedef enum {Open, Read, Write, Close, Error, Success, ReadResponse, OpenResponse} MessageType;

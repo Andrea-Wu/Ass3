@@ -126,7 +126,7 @@ int server(char* port){
             myOpen(message.filename, message.client_access, message.mode, con -> fd);
             printf("server.c: 126\n");
        }else if(messType == Read){
-            if(myRead(message.fd, con -> fd, message.buffer_len)){
+            if(myRead(message.fd, con -> fd, message.bytes_written)){
                 printf("server.c: 129 err did not read from file");
             }
        }else if(messType == Write){
@@ -208,7 +208,10 @@ int myOpen(char* filename, Access access, int mode, int con){
     sNode* tmp = hashtable[bucket];
 
     if(!tmp){
-        printf("server.c: 210 ya fucked\n");
+        //there are no sNodes in Linked list
+
+
+        printf("server.c: 210 ya probably not fucked\n");
     }
 
     int filename_open = 0;
@@ -224,84 +227,84 @@ int myOpen(char* filename, Access access, int mode, int con){
 
     //tmp should be node of LL that contains filename
     //fdnNode should not be null
-    
-    node* fdNode = tmp -> fds; 
+    if(tmp){ 
+        node* fdNode = tmp -> fds; 
 
-    if(!fdNode){
-        printf("server.c: 230 ya fucked\n");
-    }
-
-    //iterate thru fdNode to look for data...
-
-    //i set default as false, but that might cause problems
-    
-    //look thru allll fds to see if any are on transaction mode
-    //logically  if there's more than one fd then no fds are in transaction mode
-    int itr = 0;
-    int file_already_in_transaction_mode = 0;
-    int file_is_opened_for_writing = 0;
-    int file_is_opened_for_writing_in_exclusive = 0;
-    node* temp = fdNode;
-    while(temp){
-        if(temp -> write == 1){
-            file_is_opened_for_writing = 1;
+        if(!fdNode){
+            printf("server.c: 230 ya fucked\n");
         }
 
-        if(temp -> write == 1 && temp -> aMode == Exclusive){
-            file_is_opened_for_writing_in_exclusive = 1;
-        }
+        //iterate thru fdNode to look for data...
+
+        //i set default as false, but that might cause problems
         
-        if(temp -> aMode == Transaction){
-            file_already_in_transaction_mode = 1;
+        //look thru allll fds to see if any are on transaction mode
+        //logically  if there's more than one fd then no fds are in transaction mode
+        int itr = 0;
+        int file_already_in_transaction_mode = 0;
+        int file_is_opened_for_writing = 0;
+        int file_is_opened_for_writing_in_exclusive = 0;
+        node* temp = fdNode;
+        while(temp){
+            if(temp -> write == 1){
+                file_is_opened_for_writing = 1;
+            }
+
+            if(temp -> write == 1 && temp -> aMode == Exclusive){
+                file_is_opened_for_writing_in_exclusive = 1;
+            }
+            
+            if(temp -> aMode == Transaction){
+                file_already_in_transaction_mode = 1;
+            }
+            temp  = temp -> next;
         }
-        temp  = temp -> next;
-    }
 
     
-    if(access == Unrestricted){
-        if(file_already_in_transaction_mode){
-            return -1;
-        }
-
-        if(mode == O_RDONLY || mode == O_RDWR){
-            //it's lit
-        }
-
-        if(mode == O_WRONLY || mode == O_RDWR){
-            if(file_is_opened_for_writing_in_exclusive){
+        if(access == Unrestricted){
+            if(file_already_in_transaction_mode){
                 return -1;
             }
-        }
+
+            if(mode == O_RDONLY || mode == O_RDWR){
+                //it's lit
+            }
+
+            if(mode == O_WRONLY || mode == O_RDWR){
+                if(file_is_opened_for_writing_in_exclusive){
+                    return -1;
+                }
+            }
         
-    }else if(access == Exclusive){
-        if(file_already_in_transaction_mode){
-            return -1;
-        }
-
-        if(mode == O_RDONLY || mode == O_RDWR){
-            //it's lit
-        }
-
-        if(mode == O_WRONLY || mode == O_RDWR){
-
-            if(file_is_opened_for_writing){
+        }else if(access == Exclusive){
+            if(file_already_in_transaction_mode){
                 return -1;
             }
-        }
+
+            if(mode == O_RDONLY || mode == O_RDWR){
+                //it's lit
+            }
+
+            if(mode == O_WRONLY || mode == O_RDWR){
+
+                if(file_is_opened_for_writing){
+                    return -1;
+                }
+            }
         
-    }else if(access == Transaction){
-        if(filename_open){
-            //lack of permission code error
-            return -1;
+        }else if(access == Transaction){
+            if(filename_open){
+                //lack of permission code error
+                return -1;
+            }
+
+            //filename is not open at all
+            //if it's not open, then you can do anything, really!
+
+        }else{
+            printf("error, undefined mode\n");
         }
-
-        //filename is not open at all
-        //if it's not open, then you can do anything, really!
-
-    }else{
-        printf("error, undefined mode\n");
     }
-
      pthread_mutex_unlock(&lockB);
 
     fd = open(filename, mode);
@@ -428,7 +431,7 @@ int myRead(int fd, int con, int numBytes){
     }else{
       message->message_type = ReadResponse;
       message -> buffer = buffer;
-      message -> buffer_len = bytesRead + 1;
+      message -> buffer_len = bytesRead;
       message -> filename_len = -1;
       message -> bytes_written = bytesRead;
     }  

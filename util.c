@@ -12,23 +12,26 @@ int writeMessage(int fd, Message m)
     printf("Socket not working");
     return -1;
   }
-    printf("util.c: 15");
+    printf("util.c: 15\n");
   if (fprintf(sock, "%d %d %d %d %d %d %d %d ", m.message_type, m.mode, m.client_access, m.fd, m.buffer_len, m.filename_len, m.return_code, m.bytes_written) < 0){
     printf("Message failed to send1\n");
     return -1;
   }
-    printf("util.c: 20");
+    printf("util.c: 20\n");
   if(m.buffer_len > 0){
-    if(fprintf(sock, "%s\0", m.buffer)<0){
+    printf("util.c: buffer_len is positive!\n");
+    printf("currently sending %s as buffer\n", m.buffer); 
+    if(fprintf(sock, "%s\n", m.buffer)<0){
       printf("Message failed to send2\n");
       return -1;
     }
   }
 
 
-  printf("util.c: 29");
+  printf("util.c: 29\n");
   if(m.filename_len > 0){ 
-    if(fprintf(sock, "%s ", m.filename)<0){
+    printf("util.c: filename_len is positive!\n");
+    if(fprintf(sock, "%s\n", m.filename)<0){
       printf("Message failed to send3\n");
       return -1;
     }
@@ -54,8 +57,10 @@ int readMessage(int fd, Message* m)
   } 
   printf("fuck\n");
   if(m->buffer_len > 0){
+        printf("util.c: 59 scanning buffer\n");
+        printf("util.c: 61... create an array of length %d\n", m->bytes_written + 1);
         printf("bitch\n");
-    m->buffer = (char*)malloc((m->buffer_len +1)* (sizeof(char))); 
+    m->buffer = (char*)malloc((m->bytes_written +1)* (sizeof(char))); 
         printf("hell\n");
     if(fscanf(sock, "%s", m->buffer)<0){
         printf("ass\n");
@@ -65,6 +70,7 @@ int readMessage(int fd, Message* m)
   }
     printf("shit %d\n", m-> filename_len);
   if(m->filename_len > 0){
+    printf("util.c: 71 scanning filename\n");
     printf("my god\n");
     m->filename = (char*)malloc(((m->filename_len) + 100) * (sizeof(char)));
     printf("bum\n"); 

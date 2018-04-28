@@ -94,29 +94,34 @@ ssize_t netread(int fildes, void* buf, size_t nbyte){
     m.message_type = Read;
     m.fd = fildes;
  //   m.buffer = buf; //probably don't need this
-    m.buffer_len = nbyte;
+    m.buffer_len = -1;
+    m.filename_len = -1;
+    m.bytes_written = nbyte; 
 
-//i'm not sure how you want this, temp sending length we want written as buffer_len
+//i'm not sure how you want this, temp sending length we want written as bytes_written
 //and recieveing bytes actually read witn bytes_written
 
     
     
     m.filename_len = -1;
-    printf("read2\n");
+    printf("libnetfiles.c: netRead, 107\n");
     if(writeMessage(socket_fd, m) < 0){
-        printf("YOU didn't write!\n");
+        printf("libnetfiles.c: 109 libnetfiles.c: 107 YOU didn't write!\n");
         return -1;
     }
-    printf("read3\n");
+    printf("libnetfiles.c: netRead, 112 \n");
     if(readMessage(socket_fd, response) < 0){
-        printf("Didn't read!\n");
+        printf("libnetfiles.c: 114 Didn't read!\n");
         return -1;
     }
     printf("read4\n"); 
-    printf("number of bytes read: %d\n", response -> bytes_written);
+    printf("libnetfiles.c: netRead 118 number of bytes read: %d\n", response -> bytes_written);
+
 
     if(response -> buffer){
         printf("%s\n", response -> buffer); //response -> buffer is null, why?
+    }else{
+        printf("your str dind't read\n");
     }
     close(socket_fd);
   return 0;
@@ -147,15 +152,16 @@ ssize_t netwrite(int fildes, const void* buf, size_t nbyte){
     
     m.filename_len = -1;
     if(writeMessage(socket_fd, m) < 0){
-        printf("YOU didn't write!\n");
+        printf("libnetfiles.c: 150 YOU didn't write!\n");
         return -1;
     }
     if(readMessage(socket_fd, response) < 0){
-        printf("Didn't read!\n");
+        printf("libnetfiles.c: 154 Didn't read!\n");
         return -1;
     }
-    printf("read4\n"); 
-    printf("number of bytes read: %d\n", response -> bytes_written);
+    printf("libnetfiles.c: 157 read4\n"); 
+    printf("libnetfiles.c: 158 number of bytes read: %d\n", response -> bytes_written);
+    printf("libnetfiles.c: 161 string read  |%s |", response -> buffer);
 
     if(response -> buffer){
         printf("%s\n", response -> buffer); //response -> buffer is null, why?
@@ -181,7 +187,7 @@ int netclose(int fd){
   m.buffer_len = -1;
   m.filename_len = -1;
   if(writeMessage(socket_fd, m) < 0){
-    printf("YOU didn't write!\n");
+    printf("libnetfiles.c: 184 YOU didn't write!\n");
     return -1;
   }
   if(readMessage(socket_fd, response) < 0){
