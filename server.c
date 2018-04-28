@@ -42,6 +42,7 @@ int myOpen(char* filename, Access access, int mode, int con);
 int myWrite(int fd, int con, char* writeMe, int numBytes);
 int server(char* port);
 void *print(void *arg);
+int hashFunction(char* str);
 
 int main(){ //this is the server
     
@@ -113,19 +114,21 @@ int server(char* port){
         printf("server.c: what\n");
        Message message;
        printf("server.c: 1\n");
-       int didRead = readMessage(con -> fd, &message ); ///right?
-        printf("2\n");
-        printf(" msg str = %s\n", message);
+       if(readMessage(con -> fd, &message )){
+          printf("server.c: 117 initial msg not read");  
+       }///right?
+        printf("server.c: 117\n");
+       // printf("server.c: 118  msg str = %s\n", message -> );
        MessageType messType = message.message_type;
        if(messType == Open){
-         printf("3\n");
-         //call open
-         myOpen(message.filename, message.client_access, message.mode, con -> fd);
-         printf("4\n");
+       printf("server.c: 123\n");
+            //call open
+            myOpen(message.filename, message.client_access, message.mode, con -> fd);
+            printf("server.c: 126\n");
        }else if(messType == Read){
-         printf("Server:I get it man, you wanna read\n");
-         myRead(message.fd, con -> fd, message.buffer_len);
-         printf("Server:Here is your shit.\n");         
+            if(myRead(message.fd, con -> fd, message.buffer_len)){
+                printf("server.c: 129 err did not read from file");
+            }
        }else if(messType == Write){
 
        }else if(messType == Close){
@@ -134,7 +137,7 @@ int server(char* port){
             printf("this broke\n");
        }
 
-        printf("4\n");
+        printf("server.c: 135: 4\n");
 
 /*
         rc = pthread_create(&tid, NULL, print, con);
@@ -155,7 +158,7 @@ int server(char* port){
 
 void * print(void * arg){ //note the void*, void * == thread function
     pthread_t tid = pthread_self(); //changes the server function?
-    printf("print is happen\n");
+    printf("server.c: 156 print is happen\n");
     char host[100], port[10], buf[101];
     connection *c = (connection*) arg;
     int rc, nread, nwrite;
@@ -184,6 +187,8 @@ void * print(void * arg){ //note the void*, void * == thread function
 
 }
 
+
+pthread_mutex_t lockB;
 int myOpen(char* filename, Access access, int mode, int con){
     //returns an int that represents state of file
 
@@ -192,13 +197,19 @@ int myOpen(char* filename, Access access, int mode, int con){
                     //1 = unrestricted
                     //2 = transaction
 
+
+    pthread_mutex_lock(&lockB);
     int fd; //fd that will be opened
 
     //tmp should always exist
 
-    /*
+    
     int bucket = hashFunction(filename);
     sNode* tmp = hashtable[bucket];
+
+    if(!tmp){
+        printf("server.c: 210 ya fucked\n");
+    }
 
     int filename_open = 0;
     while(tmp){
@@ -211,53 +222,101 @@ int myOpen(char* filename, Access access, int mode, int con){
     }
     
 
-    //tmp should be node that contains filename
+    //tmp should be node of LL that contains filename
+    //fdnNode should not be null
+    
+    node* fdNode = tmp -> fds; 
+
+    if(!fdNode){
+        printf("server.c: 230 ya fucked\n");
+    }
+
+    //iterate thru fdNode to look for data...
+
+    //i set default as false, but that might cause problems
+    
+    //look thru allll fds to see if any are on transaction mode
+    //logically  if there's more than one fd then no fds are in transaction mode
+    int itr = 0;
+    int file_already_in_transaction_mode = 0;
+    int file_is_opened_for_writing = 0;
+    int file_is_opened_for_writing_in_exclusive = 0;
+    node* temp = fdNode;
+    while(temp){
+        if(temp -> write == 1){
+            file_is_opened_for_writing = 1;
+        }
+
+        if(temp -> write == 1 && temp -> aMode == Exclusive){
+            file_is_opened_for_writing_in_exclusive = 1;
+        }
+        
+        if(temp -> aMode == Transaction){
+            file_already_in_transaction_mode = 1;
+        }
+        temp  = temp -> next;
+    }
+
+    
     if(access == Unrestricted){
+        if(file_already_in_transaction_mode){
+            return -1;
+        }
+
         if(mode == O_RDONLY || mode == O_RDWR){
-            //check file hash table for transaction mode
+            //it's lit
         }
 
         if(mode == O_WRONLY || mode == O_RDWR){
-            //check hash table for transaction mode 
-
-            //check hash table for exclusive mode && already writing
+            if(file_is_opened_for_writing_in_exclusive){
+                return -1;
+            }
         }
         
     }else if(access == Exclusive){
+        if(file_already_in_transaction_mode){
+            return -1;
+        }
+
         if(mode == O_RDONLY || mode == O_RDWR){
-            
+            //it's lit
         }
 
         if(mode == O_WRONLY || mode == O_RDWR){
-            //check transaction mode
 
-            //
+            if(file_is_opened_for_writing){
+                return -1;
+            }
         }
         
     }else if(access == Transaction){
-        if(fileName_open){
+        if(filename_open){
             //lack of permission code error
             return -1;
         }
 
-        //set files
+        //filename is not open at all
+        //if it's not open, then you can do anything, really!
+
     }else{
         printf("error, undefined mode\n");
     }
-*/
+
+     pthread_mutex_unlock(&lockB);
+
     fd = open(filename, mode);
-    printf("a     %ld \n", filename);
+    printf("server.c 247 a     %ld \n", filename);
     addFd(fd, mode, filename, access);
-    printf("b\n");
+    printf("server.c 248 \n");
     Message* message = (Message*)malloc(sizeof(Message));
-    printf("c\n");
+    printf("server.c 251\n");
     message -> fd = 1 * fd;
-    printf("d\n");
+    printf("server.c: 253d\n");
     int didWrite = writeMessage(con, *message);
-    printf("e\n");
+    printf("server.c: 255 e\n");
 
     if(didWrite){
-    printf("f\n");
+    printf("server.c: 258 f\n");
         //did not write
         printf("server did not write to socket\n");
         return -1;
@@ -267,20 +326,20 @@ int myOpen(char* filename, Access access, int mode, int con){
 }
 
 int hashFunction(char* str){
-    printf("%ld\n", str);
+    printf("server.c: 268 %ld\n", str);
     int strLen = strlen(str);
-    printf("h1\n");
+    printf("server.c: 270 h1\n");
     int bucket = 0; 
-    printf("h2\n");
+    printf("server.c: 272 h2\n");
     int i = 0;
-    printf("h3\n");
+    printf("server.c: 274 h3\n");
     while(i < strLen){
         bucket = bucket + str[i];
-        printf("h4 %d \n", i);
+        printf("server.c: 277 h4 %d \n", i);
         i++;
     }
     
-    printf("h5\n");
+    printf("server.c: 281h5\n");
     bucket = bucket % 100;
     return bucket;
 }
@@ -290,11 +349,11 @@ pthread_mutex_t lockA;
 void addFd( int fd, int mode, char* filename, Access aMode){
     
     int bucket = hashFunction(filename);
-    printf("ass1\n");
+    printf("server.c: 291 ass1\n");
 
     //create node to insert
     node* newNode = (node*)malloc(sizeof(node));
-    printf("ass2\n");
+    printf("server.c: 295 ass2\n");
     newNode -> fd = fd;
 
     if(mode == O_RDONLY || mode == O_RDWR){
@@ -304,7 +363,7 @@ void addFd( int fd, int mode, char* filename, Access aMode){
         newNode -> read = 0;
     }
 
-    printf("ass3\n");
+    printf("server.c: 305 ass3\n");
 
     if(mode == O_WRONLY || mode == O_RDWR){
         newNode -> write = 1;
@@ -313,28 +372,28 @@ void addFd( int fd, int mode, char* filename, Access aMode){
     }
 
     newNode -> aMode = aMode;
-    printf("ass4\n");
+    printf("serrver.c : 314 ass4\n");
     pthread_mutex_lock(&lockA);
 
     //find sNode list corresp. to filename
     sNode* tmp = hashtable[bucket];
-    printf("phantasmagoria\n");
+    printf("server.c: 319 hantasmagoria\n");
     //iterate thru sNode list until string is found
     while(tmp){
-            printf("fanta %s hehe\n", filename);
+            printf("server.c: 322 fanta %s hehe\n", filename);
             
 
         if(strcmp(tmp -> str, filename) == 0){
-            printf("fantasy\n");
+            printf("server.c: 326 fantasy\n");
             break;
         }
         
         tmp = tmp -> next;
     }
-    printf("leguminous\n");
+    printf("server.c: 332 leguminous\n");
     if(!tmp){ //tmp is null, string does not exist yet in hash table
         tmp = (sNode*)malloc(sizeof(sNode));
-        printf("pulmonary gland\n");
+        printf("server.c: 335 pulmonary gland\n");
         tmp -> str = filename;
 
         //insert into hash, randomly...
@@ -353,20 +412,26 @@ void addFd( int fd, int mode, char* filename, Access aMode){
 }
 
 int myRead(int fd, int con, int numBytes){
+    fd = fd * -1;
+    printf("server: 359    fd is %d, numbytes is %d\n", fd, numBytes);
     char* buffer = (char*)malloc(sizeof(char) * (numBytes + 1));
-    int byte_read = read(fd, buffer, numBytes);
-   
+    int bytesRead = read(fd, buffer, numBytes);
+
+    if(buffer){
+        printf("server: 362\n");
+        printf("server.c: 361 %d bytes read, %s\n", bytesRead, buffer);
+    }
     Message* message = (Message*)malloc(sizeof(Message));
-    message -> buffer = buffer;
-    message -> buffer_len = byte_read;
-    message -> filename_len = -1;
-    if (byte_read == -1){
+    if (bytesRead == -1){
       message->message_type = Error;
       message->return_code = errno;
     }else{
       message->message_type = ReadResponse;
+      message -> buffer = buffer;
+      message -> buffer_len = bytesRead + 1;
+      message -> filename_len = -1;
+      message -> bytes_written = bytesRead;
     }  
-
 
     if(writeMessage(con, *message)){
         //did not write
