@@ -12,7 +12,7 @@
 struct addrinfo* hostinfo;
 Access access_mode;
 
-int netserverinit(char* hostname){
+int netserverinit(char* hostname, int filemode){
   //fileMode follows numbers in assignment instructions
 
   struct addrinfo hints, *serverinfo;
@@ -32,6 +32,7 @@ int netserverinit(char* hostname){
   }
 
   //set mode flag depending on the mode
+  access_mode = filemode;
   hostinfo=serverinfo;
   //freeaddrinfo(serverinfo);
   //ask Aaron when he freed this linked list or how he managed to make a copy of it.
