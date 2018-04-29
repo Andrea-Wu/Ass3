@@ -25,8 +25,14 @@ typedef struct node{
     struct node* next;
 } node;
 
+typedef struct message_and_connection{
+    message m;
+    int conFd;
+}
+
 sNode** hashtable;  //global hash on filenames    
 node** hashtable_fd; //global hash on fds
+
 
 
 #define BACKLOG 5
@@ -133,28 +139,44 @@ int server(char* port){
         }
 
 
+        
+        pthread thread;
+        message_and_connection* m = (message_and_connection*)malloc(sizeof(message_and_connection));
+        m -> message = message;
+        m -> conFd = con -> fd; 
+
        MessageType messType = message.message_type;
        if(messType == Open){
     if(message.filename){
             printf("server.c: client wants to Open %s\n", message.filename);
+
+            pthread_create(&thread, NULL, myOpen, (void*)m);
             }else{
                 printf("filename null\n");
             }
             //call open
+/*
             if(myOpen(message.filename, message.client_access, message.mode, con -> fd)){
                 printf("server.c: myOpen failed\n");
             }else{
                 printf("server.c: myOpen successful\n");
             }
+*/
        }else if(messType == Read){
             printf("server.c: client wants to read\n");
+
+            pthread_create(&thread, NULL, myRead, (void*)m);
+
+/*            
             if(myRead(message.fd, con -> fd, message.bytes_written)){
                 printf("server.c: myRead failed\n");
             }else{
                 printf("server.c: myRead successful\n");
             }
+*/
        }else if(messType == Write){
             printf("server.c: client wants to write\n");
+            pthread_create(&thread, NULL, myWrite, (void*)m);
             if(myWrite(message.fd, con-> fd, message.buffer, strlen(message.buffer) )){ 
                 printf("server.c: myWrite failed\n");
             }else{
@@ -163,10 +185,13 @@ int server(char* port){
 
        }else if(messType == Close){
             printf("server.c: client wants to close\n");
+            pthread_create(&thread, NULL, myClose, (void*)m);
 
        }else{
             printf("this broke\n");
        }
+
+       pthread_detatch(&thread);
 
 /*
         rc = pthread_create(&tid, NULL, print, con);
@@ -218,7 +243,8 @@ void * print(void * arg){ //note the void*, void * == thread function
 
 
 pthread_mutex_t lockB;
-int myOpen(char* filename, Access access, int mode, int con){
+//int myOpen(char* filename, Access access, int mode, int con){
+void* myOpen(void* args){
     //returns an int that represents state of file
 
     //has to check whether exclusive, unrestricted, transaction
@@ -226,6 +252,11 @@ int myOpen(char* filename, Access access, int mode, int con){
                     //1 = unrestricted
                     //2 = transaction
 
+    message_and_connection * m = (message_and_connection*)args;
+
+    m -> conFd = con;
+
+    
 
     pthread_mutex_lock(&lockB);
     int fd; //fd that will be opened
@@ -390,7 +421,7 @@ int hashFunction(char* str){
 pthread_mutex_t lockA;
 pthread_mutex_t lockC;
 
-void addFd( int fd, int mode, char* filename, Access aMode){
+void addFd( int fd, int mode, char* filename, Access aMode){ 
     printf("fd is %d\n", fd);
 
     if(fd == -1){
@@ -472,7 +503,8 @@ void addFd( int fd, int mode, char* filename, Access aMode){
 
 }
 
-int myRead(int fd, int con, int numBytes){
+//int myRead(int fd, int con, int numBytes){
+void* myRead(void* args){
     fd = fd * -1;
 
     Message* message = (Message*)malloc(sizeof(Message));
@@ -525,8 +557,8 @@ int myRead(int fd, int con, int numBytes){
     return 0;
 }
 
-int myWrite(int fd, int con, char* writeMe, int numBytes){
-
+//int myWrite(int fd, int con, char* writeMe, int numBytes){
+void* myWrite(void* args){
     //make fd positive
     fd = fd * -1;
 
@@ -559,7 +591,8 @@ int myWrite(int fd, int con, char* writeMe, int numBytes){
     
 }
 
-int myClose(int fd, int con){
+//int myClose(int fd, int con){
+void* myClose(void* args);
     Message* message = (Message*)malloc(sizeof(Message));
 
     if(close(fd)){
