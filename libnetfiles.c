@@ -65,23 +65,22 @@ int netopen(const char* pathname, int flags){
 
   //send this shit and read that shit
   if (writeMessage(socket_fd, m) < 0 ){
-    printf("You done fucked, can't write!");
+    printf("libnetfiles: You done fucked, can't write!\n");
     return -1;
   }
+  printf("libnetfiles: netOpen starts to read\n");
   if (readMessage(socket_fd, response)<0){
-    printf("Didn't read shit!");
+    printf("libnetfiles: Didn't read shit!\n");
     return -1;
   }
 
   if (response->fd <  0){
-    printf("Failed to open file");
+    printf("libnetfiles: Failed to open file\n");
     return -1;
   }
- 
- //make fd negative
- response -> fd = (response -> fd) * -1;
+   
   close(socket_fd);
-  return response->fd;
+  return response->fd*-1;
 }
 
 ssize_t netread(int fildes, void* buf, size_t nbyte){

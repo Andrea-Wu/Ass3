@@ -9,7 +9,7 @@ int writeMessage(int fd, Message m)
   FILE * sock = fdopen(fd_copy, "w");
 
   if (sock ==NULL){
-    printf("util.c: Socket not working");
+    printf("util.c: Socket not working\n");
     return -1;
   }
     printf("util.c: socket exists\n");
@@ -56,16 +56,25 @@ int readMessage(int fd, Message* m)
 
   printf("util.c: socket works for reading\n");
   int what;
-  if(what = fscanf(sock, "%d %d %d %d %d %d %d %d ", &m->message_type, &m->mode, &m->client_access, &m->fd, &m->buffer_len, &m->filename_len, &m->return_code, &m->bytes_written)<0){
+  if((what = fscanf(sock, "%d %d %d %d %d %d %d %d ", &m->message_type, &m->mode, &m->client_access, &m->fd, &m->buffer_len, &m->filename_len, &m->return_code, &m->bytes_written))<0){
     printf("util.c: Failed to receive message: a   %d \n", what);
     perror("util.c: myError");
     return -1;
-  } 
-  printf("util.c: initial msg scanned\n");
+  }
+  printf("%d ",m->message_type);
+  printf("%d ",m->mode);
+  printf("%d ",m->client_access);
+  printf("%d ",m->fd);
+  printf("%d ",m->buffer_len);
+  printf("%d ",m->filename_len);
+  printf("%d ",m->return_code);
+  printf("%d\n",m->bytes_written);
+  printf("util.c: initial msg scanned, items scanned: %d\n", what);
   if(m->buffer_len > 0){
 
         printf("util.c: 61... scanning buffer. create an array of length %d\n", m->bytes_written + 1);
     m->buffer = (char*)malloc((m->buffer_len +1)* (sizeof(char))); 
+    
     if(fread(m->buffer,m->buffer_len+1,1,sock)<0){
       printf("util.c: Failed to receive message: b\n");
       return -1;

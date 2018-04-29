@@ -168,8 +168,6 @@ int server(char* port){
             printf("this broke\n");
        }
 
-        printf("server.c: 135: 4\n");
-
 /*
         rc = pthread_create(&tid, NULL, print, con);
         if(rc != 0){
@@ -338,19 +336,21 @@ int myOpen(char* filename, Access access, int mode, int con){
     }
      pthread_mutex_unlock(&lockB);
     printf("about to open %s\n", filename);
+    Message* message = (Message*)malloc(sizeof(Message));
     if( (fd  = open(filename, mode)) == -1){
         printf("server.c: file did not open\n");
         perror("error: ");
+        message -> message_type = Error;
+        message -> return_code = errno;
+    }else{
+        message -> message_type = OpenResponse;
+        message -> fd = fd;
     }
-    perror("err");
     printf("about to addfd with fd %d\n", fd);
     addFd(fd, mode, filename, access);
-    Message* message = (Message*)malloc(sizeof(Message));
-    
-    message -> fd = 1 * fd;
+
     message -> filename_len = -1;
     message -> buffer_len = -1;
-
 
     //message -> filename = (char*)malloc(sizeof(char)* 4); //3?
     //strcpy(message -> filename, "dir");
@@ -370,10 +370,8 @@ int myOpen(char* filename, Access access, int mode, int con){
         printf("server did not write to client\n");
         return -1;
     }
-
+    close(con);
     return 0;
-
-
 }
 
 int hashFunction(char* str){

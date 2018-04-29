@@ -1,7 +1,7 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
-#define PORT "8821"
+#define PORT "8823"
 #define HOST "decorator.cs.rutgers.edu"
 
 typedef enum {Unrestricted, Exclusive, Transaction} Access;

@@ -16,6 +16,7 @@ int main(){
   int h =  netopen("dir", O_RDONLY);
   printf("The fd we got back from the server:%d\n", h);
 
+  printf("client: netOpen has done its job!\n");
   char* buf = (char*)malloc(sizeof(char) * 10);
   int n = netread(h, buf, 9);
 
