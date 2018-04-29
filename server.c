@@ -151,7 +151,7 @@ int server(char* port){
             if(myRead(message.fd, con -> fd, message.bytes_written)){
                 printf("server.c: myRead failed\n");
             }else{
-                printf("server.c: myRead successful");
+                printf("server.c: myRead successful\n");
             }
        }else if(messType == Write){
             printf("server.c: client wants to write\n");
@@ -520,7 +520,7 @@ int myRead(int fd, int con, int numBytes){
         printf("server did not write to client\n");
         return -1;
     }
-
+    close(con);
     free(message);
     return 0;
 }

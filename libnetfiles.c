@@ -91,21 +91,23 @@ ssize_t netread(int fildes, void* buf, size_t nbyte){
 
     //establish connection
     socket_fd = openCon();
+    if(socket_fd <0){
+      printf("libnetfiles.c: client connection to server failed\n");
+    }else{
+      printf("libnetfiles.c: client connected to server\n");
+    }
 
     m.client_access = access_mode;
     m.message_type = Read;
     m.fd = fildes;
- //   m.buffer = buf; //probably don't need this
+ // m.buffer = buf; //probably don't need this
     m.buffer_len = -1;
     m.filename_len = -1;
     m.bytes_written = nbyte; 
 
 //i'm not sure how you want this, temp sending length we want written as bytes_written
 //and recieveing bytes actually read witn bytes_written
-
     
-    
-    m.filename_len = -1;
     printf("libnetfiles.c: netRead, 107\n");
     if(writeMessage(socket_fd, m) < 0){
         printf("libnetfiles.c: you did not send mesg to server!\n");

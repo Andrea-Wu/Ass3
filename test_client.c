@@ -17,8 +17,8 @@ int main(){
   printf("The fd we got back from the server:%d\n", h);
 
   printf("client: netOpen has done its job!\n");
-  char* buf = (char*)malloc(sizeof(char) * 10);
-  int n = netread(h, buf, 9);
+  char* buf = (char*)malloc(sizeof(char) * 30);
+  int n = netread(h, buf, 25);
 
   //  char* dafuq = "what the fuck\n";
   //int m = netwrite(h, dafuq, strlen(dafuq));  
