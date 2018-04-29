@@ -21,7 +21,7 @@ int writeMessage(int fd, Message m)
   if(m.buffer_len > 0){
     printf("util.c: buffer_len is positive!\n");
     printf("util.c: currently sending %s as buffer\n", m.buffer); 
-    if(fprintf(sock, "%s\n", m.buffer)<0){
+    if(fwrite(m.buffer,m.buffer_len+1,1,sock)<0){
       printf("util.c: Message failed to send2\n");
       return -1;
     }
@@ -31,7 +31,7 @@ int writeMessage(int fd, Message m)
     
   if(m.filename_len > 0){ 
     printf("util.c: filename_len is positive!\n");
-    if(fprintf(sock, "%s\n", m.filename)<0){
+    if(fwrite(m.filename,m.filename_len+1,1,sock)<0){
       printf("util.c: Message failed to send3\n");
       return -1;
     }
@@ -65,7 +65,7 @@ int readMessage(int fd, Message* m)
 
         printf("util.c: 61... scanning buffer. create an array of length %d\n", m->bytes_written + 1);
     m->buffer = (char*)malloc((m->bytes_written +1)* (sizeof(char))); 
-    if(fscanf(sock, "%s", m->buffer)<0){
+    if(fread(m->buffer,m->buffer_len+1,1,sock)<0){
       printf("util.c: Failed to receive message: b\n");
       return -1;
     }
@@ -77,7 +77,7 @@ int readMessage(int fd, Message* m)
   if(m->filename_len > 0){
     printf("util.c: 71 scanning filename\n");
     m->filename = (char*)malloc(((m->filename_len) + 100) * (sizeof(char)));
-    if(fscanf(sock, "%s", m->filename)<0){
+    if(fread(m->filename,m->filename_len+1,1,sock)<0){
       printf("Failed to receive message: c\n");
       return -1;
     }
