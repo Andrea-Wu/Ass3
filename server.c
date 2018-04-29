@@ -346,13 +346,18 @@ int myOpen(char* filename, Access access, int mode, int con){
     printf("about to addfd with fd %d\n", fd);
     addFd(fd, mode, filename, access);
     Message* message = (Message*)malloc(sizeof(Message));
+    
     message -> fd = 1 * fd;
-    message -> filename_len = 5;
+    message -> filename_len = -1;
     message -> buffer_len = -1;
 
+
+    //message -> filename = (char*)malloc(sizeof(char)* 4); //3?
+    //strcpy(message -> filename, "dir");
     
-    message -> filename = (char*)malloc(sizeof(char)* 5);
-    strcpy(message -> filename, "asdf");
+
+    //message -> buffer_len = -1;
+    //message -> filename_len = 3;
 
     writeMessage(1, *message);
 
