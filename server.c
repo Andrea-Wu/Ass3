@@ -163,7 +163,11 @@ int server(char* port){
 
        }else if(messType == Close){
             printf("server.c: client wants to close\n");
-
+            if(myClose(message.fd, con->fd)){
+              printf("server.c: myClose failed\n");
+            }else{
+              printf("server.c: myClose successful\n");
+            }
        }else{
             printf("this broke\n");
        }
@@ -508,6 +512,7 @@ int myRead(int fd, int con, int numBytes){
     if (bytesRead == -1){
       message->message_type = Error;
       message->return_code = errno;
+      return -1;
     }else{
       message->message_type = ReadResponse;
       message -> buffer = buffer;
@@ -540,20 +545,26 @@ int myWrite(int fd, int con, char* writeMe, int numBytes){
     printf("server.c: 466  fd= %d, str= %s, numBytes= %d\n", fd, writeMe, numBytes);
     int bytesWritten = write(fd, writeMe, numBytes); 
 
-    if(bytesWritten == -1){
-        printf("server did not write to fd %d\n", fd);
-        perror("err");
-        return 0;
-    }
-
     Message* message = (Message*)malloc(sizeof(Message));
-    message -> bytes_written = bytesWritten;
+    if(bytesWritten == -1){
+      printf("server did not write to fd %d\n", fd);
+      perror("err");
+      message->message_type = Error;
+      message->return_code = errno;
+      return -1;
+    }else{
+      message->message_type = WriteResponse;
+      message->buffer_len = -1;
+      message->bytes_written = bytesWritten;
+    }
+    
 
     if(writeMessage(con, *message)){
         printf("server did not write to client\n");
         return -1;
     }
-
+    
+    close(con);
     free(message);
     return 0;
     
@@ -561,24 +572,31 @@ int myWrite(int fd, int con, char* writeMe, int numBytes){
 
 int myClose(int fd, int con){
     Message* message = (Message*)malloc(sizeof(Message));
-
+   
+    fd = fd*-1;
     if(close(fd)){
         printf("server failed to close file\n");
-        message -> return_code = -1;
-        if(writeMessage(con, *message)){
-            printf("server did not write to client\n");
-            return -2;
-        }
+        message -> message_type = Error;
+        message -> return_code = errno;
         return -1;
     }else{
-        message -> return_code = 0;
-        if(writeMessage(con, *message)){
-            printf("server did not write to client\n");
-            return -2;
-        }
+        message->message_type = CloseResponse;
+        message->buffer_len = -1;
+        message->return_code = 0;
 
-        //remove fd from linked list
     }
+
+    if(writeMessage(con, *message)){
+        printf("server did not write to client\n");
+        return -1;
+    }
+
+    close(con);
+    free(message);
+    return 0;
+
+
+    //remove fd from linked list
 }
 
 

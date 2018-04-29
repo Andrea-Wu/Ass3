@@ -165,14 +165,14 @@ ssize_t netwrite(int fildes, const void* buf, size_t nbyte){
         printf("libnetfiles.c: no response from server!\n");
         return -1;
     }
-    printf("libnetfiles.c: 158 number of bytes read: %d\n", response -> bytes_written);
+    printf("libnetfiles.c: 158 number of bytes written: %d\n", response -> bytes_written);
 
     if(response -> buffer){
         printf("libnetfiles.c: reponse str %s\n", response -> buffer); //response -> buffer is null, why?
     }
     close(socket_fd);
  
-  return 0;
+  return response->bytes_written;
 }
 
 

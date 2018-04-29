@@ -5,7 +5,7 @@
 #define HOST "decorator.cs.rutgers.edu"
 
 typedef enum {Unrestricted, Exclusive, Transaction} Access;
-typedef enum {Open, Read, Write, Close, Error, Success, ReadResponse, OpenResponse} MessageType;
+typedef enum {Open, Read, Write, Close, Error, Success, ReadResponse, WriteResponse, OpenResponse, CloseResponse} MessageType;
 
 typedef struct message{
   MessageType message_type;
