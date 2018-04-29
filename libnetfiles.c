@@ -61,6 +61,8 @@ int netopen(const char* pathname, int flags){
   strcpy(file_name, pathname);
   m.filename = file_name;
 
+    writeMessage(1, m);
+
   //send this shit and read that shit
   if (writeMessage(socket_fd, m) < 0 ){
     printf("You done fucked, can't write!");
@@ -210,7 +212,7 @@ int openCon(){
       perror("socket");
       return -1;
     }else{
-      printf("Successfully created network socket: %d\n",socket_fd );
+      printf("libnetfiles.c: Successfully created network socket: %d\n",socket_fd );
       break;
     }
   }
@@ -219,10 +221,10 @@ int openCon(){
   connection = connect(socket_fd, res->ai_addr, sizeof(*(res->ai_addr)));
 
   if(connection == 0){
-    printf("Successfully connected\n");
+    printf("libnetfiles.c: Successfully connected\n");
     return socket_fd;
   }else{
-   printf("connection Failed\n");
+   printf("libnetfiles.c: connection Failed\n");
     return -1;
   }
   

@@ -13,7 +13,7 @@
 int main(){
   int status;
   status = netserverinit(HOST, Unrestricted);
-  int h =  netopen("dir", O_WRONLY);
+  int h =  netopen("dir", O_RDONLY);
   printf("The fd we got back from the server:%d\n", h);
 
   char* buf = (char*)malloc(sizeof(char) * 10);

@@ -115,6 +115,7 @@ int server(char* port){
         con -> addr_len = sizeof(struct sockaddr_storage);
         printf("server.c: waiting to accept\n");
         con -> fd = accept(mySocket, (struct sockaddr *) &con -> addr, &con ->addr_len);
+        printf("connection fd is %d\n", con->fd);
       
         if(con -> fd == -1){
              printf("server.c: connection from client failed\n");
@@ -134,7 +135,11 @@ int server(char* port){
 
        MessageType messType = message.message_type;
        if(messType == Open){
-            printf("server.c: client wants to Open\n");
+    if(message.filename){
+            printf("server.c: client wants to Open %s\n", message.filename);
+            }else{
+                printf("filename null\n");
+            }
             //call open
             if(myOpen(message.filename, message.client_access, message.mode, con -> fd)){
                 printf("server.c: myOpen failed\n");
@@ -332,12 +337,28 @@ int myOpen(char* filename, Access access, int mode, int con){
         }
     }
      pthread_mutex_unlock(&lockB);
-
-    fd = open(filename, mode);
+    printf("about to open %s\n", filename);
+    if( (fd  = open(filename, mode)) == -1){
+        printf("server.c: file did not open\n");
+        perror("error: ");
+    }
+    perror("err");
+    printf("about to addfd with fd %d\n", fd);
     addFd(fd, mode, filename, access);
     Message* message = (Message*)malloc(sizeof(Message));
     message -> fd = 1 * fd;
+    message -> filename_len = 5;
+    message -> buffer_len = -1;
+
+    
+    message -> filename = (char*)malloc(sizeof(char)* 5);
+    strcpy(message -> filename, "asdf");
+
+    writeMessage(1, *message);
+
+    printf("connection fd is %d\n", con);
     int didWrite = writeMessage(con, *message);
+
 
     if(didWrite){
         //did not write
@@ -367,7 +388,12 @@ pthread_mutex_t lockA;
 pthread_mutex_t lockC;
 
 void addFd( int fd, int mode, char* filename, Access aMode){
-    
+    printf("fd is %d\n", fd);
+
+    if(fd == -1){
+        printf("this shouldn't happen\n");
+    }
+
     int bucket = hashFunction(filename);
 
     //create node to insert
@@ -417,7 +443,7 @@ void addFd( int fd, int mode, char* filename, Access aMode){
         tmp -> next = tmp2;
     }
 
-
+    
     //ASSUMPTION: fdList should not be null
     node* tmp3 = tmp -> fds;
     tmp -> fds = newNode;
@@ -425,7 +451,7 @@ void addFd( int fd, int mode, char* filename, Access aMode){
 
     pthread_mutex_unlock(&lockA);
 
-
+    printf("server.c: inserted into hashtable\n");
     //MUTEX: insert into hashtable_fd
     pthread_mutex_lock(&lockC);
     
@@ -435,6 +461,7 @@ void addFd( int fd, int mode, char* filename, Access aMode){
     //just store a pointer to the node that's in the other hastable
         //POTENTIAL PROBLEMS: ???
         //BENEFITS: don't need to free as many nodes
+    printf("server.c: fd is %d\n", fd);
     hashtable_fd[fd] = newNode;
 
 
