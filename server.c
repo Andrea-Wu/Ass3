@@ -21,14 +21,14 @@ typedef struct node{
     int read; //is it reading
     int write; //is is writing
     char* filename;
-    int aMode; //access mode
+    int client_access; //access mode
     struct node* next;
 } node;
 
-typedef struct message_and_connection{
-    message m;
+typedef struct m_and_c{
+    Message* message;
     int conFd;
-}
+} m_and_c;
 
 sNode** hashtable;  //global hash on filenames    
 node** hashtable_fd; //global hash on fds
@@ -42,11 +42,11 @@ typedef struct connection{ //idk
     int fd;
 } connection;
 
-void addFd( int fd, int mode, char* filename, Access aMode);
-int myClose(int fd, int con);
-int myRead(int fd, int con, int numBytes);
-int myOpen(char* filename, Access access, int mode, int con);
-int myWrite(int fd, int con, char* writeMe, int numBytes);
+void addFd( int fd, int mode, char* filename, Access client_access);
+void* myClose(void* args);
+void* myRead(void* args);
+void* myOpen(void* args);
+void* myWrite(void* args);
 int server(char* port);
 void *print(void *arg);
 int hashFunction(char* str);
@@ -131,57 +131,41 @@ int server(char* port){
         }
 
        // printf("accepted\n");
-       Message message;
-       if(readMessage(con -> fd, &message )){
+
+       //ASSUMPTION: this has to be malloced so that threading doesn't break
+       Message*  message = (Message*)malloc(sizeof(Message));
+       if(readMessage(con -> fd, message)){
           printf("server.c: initial msg from client not read\n");  
        }else{
             printf("server.c: initial message from client read\n");
         }
-
-
         
-        pthread thread;
-        message_and_connection* m = (message_and_connection*)malloc(sizeof(message_and_connection));
+        //IMPORTANT: this thread might break if not malloced
+        pthread_t thread;
+        m_and_c* m = (m_and_c*)malloc(sizeof(m_and_c));
         m -> message = message;
         m -> conFd = con -> fd; 
 
-       MessageType messType = message.message_type;
-       if(messType == Open){
-    if(message.filename){
-            printf("server.c: client wants to Open %s\n", message.filename);
-
-            pthread_create(&thread, NULL, myOpen, (void*)m);
+         MessageType messType = message -> message_type;
+        if(messType == Open){
+            if(message -> filename){
+                printf("server.c: client wants to Open %s\n", message -> filename);
             }else{
-                printf("filename null\n");
+                    printf("filename null\n");
             }
             //call open
-/*
-            if(myOpen(message.filename, message.client_access, message.mode, con -> fd)){
-                printf("server.c: myOpen failed\n");
-            }else{
-                printf("server.c: myOpen successful\n");
-            }
-*/
+           pthread_create(&thread, NULL, myOpen, (void*)m);
+
        }else if(messType == Read){
             printf("server.c: client wants to read\n");
 
             pthread_create(&thread, NULL, myRead, (void*)m);
 
-/*            
-            if(myRead(message.fd, con -> fd, message.bytes_written)){
-                printf("server.c: myRead failed\n");
-            }else{
-                printf("server.c: myRead successful\n");
-            }
-*/
        }else if(messType == Write){
             printf("server.c: client wants to write\n");
+
             pthread_create(&thread, NULL, myWrite, (void*)m);
-            if(myWrite(message.fd, con-> fd, message.buffer, strlen(message.buffer) )){ 
-                printf("server.c: myWrite failed\n");
-            }else{
-                printf("server.c: myWrite successful\n");
-            }
+
 
        }else if(messType == Close){
             printf("server.c: client wants to close\n");
@@ -191,7 +175,7 @@ int server(char* port){
             printf("this broke\n");
        }
 
-       pthread_detatch(&thread);
+       pthread_detach(&thread);
 
 /*
         rc = pthread_create(&tid, NULL, print, con);
@@ -252,11 +236,14 @@ void* myOpen(void* args){
                     //1 = unrestricted
                     //2 = transaction
 
-    message_and_connection * m = (message_and_connection*)args;
 
-    m -> conFd = con;
+    m_and_c * mc = (m_and_c*)args;
+    Message* message_arg = mc -> message;
+    int con = mc -> conFd;
+    char* filename = message_arg -> filename;
+    Access access = message_arg -> client_access;
+    int mode = message_arg -> mode;
 
-    
 
     pthread_mutex_lock(&lockB);
     int fd; //fd that will be opened
@@ -310,11 +297,11 @@ void* myOpen(void* args){
                 file_is_opened_for_writing = 1;
             }
 
-            if(temp -> write == 1 && temp -> aMode == Exclusive){
+            if(temp -> write == 1 && temp -> client_access == Exclusive){
                 file_is_opened_for_writing_in_exclusive = 1;
             }
             
-            if(temp -> aMode == Transaction){
+            if(temp -> client_access == Transaction){
                 file_already_in_transaction_mode = 1;
             }
             temp  = temp -> next;
@@ -421,7 +408,7 @@ int hashFunction(char* str){
 pthread_mutex_t lockA;
 pthread_mutex_t lockC;
 
-void addFd( int fd, int mode, char* filename, Access aMode){ 
+void addFd( int fd, int mode, char* filename, Access client_access){ 
     printf("fd is %d\n", fd);
 
     if(fd == -1){
@@ -450,7 +437,7 @@ void addFd( int fd, int mode, char* filename, Access aMode){
         newNode -> write = 0;
     }
 
-    newNode -> aMode = aMode;
+    newNode -> client_access = client_access;
 
     //MUTEX: insert into hashtable
     pthread_mutex_lock(&lockA);
@@ -505,6 +492,15 @@ void addFd( int fd, int mode, char* filename, Access aMode){
 
 //int myRead(int fd, int con, int numBytes){
 void* myRead(void* args){
+
+    //unpacking arguments
+    m_and_c* mc = (m_and_c*)args;
+    int con = mc -> conFd;
+    Message* message_arg = mc-> message;
+    int fd = message_arg -> fd;
+    int numBytes = message_arg -> bytes_written;
+    
+    //make fd positive
     fd = fd * -1;
 
     Message* message = (Message*)malloc(sizeof(Message));
@@ -559,6 +555,16 @@ void* myRead(void* args){
 
 //int myWrite(int fd, int con, char* writeMe, int numBytes){
 void* myWrite(void* args){
+
+    //unpacking arguments
+    m_and_c* mc = (m_and_c*)args;
+    int con = mc -> conFd;
+    Message* message_arg = mc -> message;
+    int fd = message_arg -> fd;
+    char* writeMe = message_arg -> buffer;
+    int numBytes = strlen(writeMe);
+
+
     //make fd positive
     fd = fd * -1;
 
@@ -592,7 +598,14 @@ void* myWrite(void* args){
 }
 
 //int myClose(int fd, int con){
-void* myClose(void* args);
+void* myClose(void* args){
+
+    //unpacking args
+    m_and_c* mc = (m_and_c*)args;
+    int con = mc -> conFd;
+    Message* message_arg = mc -> message;
+    int fd = message_arg -> fd;
+
     Message* message = (Message*)malloc(sizeof(Message));
 
     if(close(fd)){
