@@ -13,7 +13,9 @@
 int main(){
   int status;
   status = netserverinit(HOST, Unrestricted);
-  int h =  netopen("hello.txt", 4000);
+  int h =  netopen("file.txt", O_WRONLY);
+  printf("%d\n", h);
+  /*
   printf("client: The fd we got back from the server:%d\n", h);
   printf("client: netOpen has done its job!\n");
 
@@ -27,4 +29,5 @@ int main(){
   //int a = netclose(h);
   //printf("client: result of netclose: %d\n", a);
   return 0;  
+  */
 }

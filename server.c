@@ -162,10 +162,13 @@ int server(char* port){
          MessageType messType = message -> message_type;
         printf("server.c: 157\n");
         pthread_mutex_lock(&htLock);
+        printf("server.c: hello\n");
         printf("server.c: 159\n");
         printf("messType = %d\n", messType); 
-
+        printf("server.c: 168\n");
+        
         if(messType == Open){
+            printf("please open me\n");
             if(message -> filename){
                 printf("server.c: client wants to Open %s\n", message -> filename);
             }else{
@@ -233,7 +236,7 @@ int server(char* port){
     return 0;
 }
 
-
+/*
 void * print(void * arg){ //note the void*, void * == thread function
     pthread_t tid = pthread_self(); //changes the server function?
     printf("server.c: 156 print is happen\n");
@@ -264,7 +267,7 @@ void * print(void * arg){ //note the void*, void * == thread function
     return NULL;
 
 }
-
+*/
 
 //int myOpen(char* filename, Access access, int mode, int con){
 void* myOpen(void* args){
@@ -339,22 +342,27 @@ void* myOpen(void* args){
         int file_is_opened_for_writing = 0;
         int file_is_opened_for_writing_in_exclusive = 0;
         node* temp = fdNode;
+
         while(temp){
             if(temp -> write == 1){
                 file_is_opened_for_writing = 1;
+                printf("file is open for writing\n");
             }
 
             if(temp -> write == 1 && temp -> client_access == Exclusive){
                 file_is_opened_for_writing_in_exclusive = 1;
+                printf("file is open for writing in exclusive\n");
             }
             
             if(temp -> client_access == Transaction){
                 file_already_in_transaction_mode = 1;
+                printf("file is already in transaction mode\n");
             }
             temp  = temp -> next;
         }
 
-    
+         pthread_mutex_unlock(&htLock);
+
         if(access == Unrestricted){
             if(file_already_in_transaction_mode){
                 writeErrMsg(LACK_OF_PERMISSION_ERROR, con);
@@ -405,7 +413,8 @@ void* myOpen(void* args){
             pthread_exit(NULL);
         }
     }
-     pthread_mutex_unlock(&htLock);
+    pthread_mutex_unlock(&htLock);
+
 
     printf("about to open %s\n", filename);
 
@@ -475,8 +484,6 @@ int hashFunction(char* str){
     return bucket;
 }
 
-pthread_mutex_t lockA;
-pthread_mutex_t lockC;
 
 void addFd( int fd, int mode, char* filename, Access client_access){ 
     printf("fd is %d\n", fd);
@@ -564,11 +571,9 @@ void addFd( int fd, int mode, char* filename, Access client_access){
     tmp -> fds = newNode;
     newNode -> next = tmp3;
 
-    pthread_mutex_unlock(&htLock);
 
     printf("server.c: inserted into hashtable\n");
     //MUTEX: insert into hashtable_fd
-    pthread_mutex_lock(&htLock);
     
     //IMPORTANT: the assumption that file descriptors do not exceed 1000
 
@@ -757,6 +762,7 @@ void* myClose(void* args){
         
     
         while(strcmp(sNodes -> str, fileString) != 0){
+            sNodes = sNodes -> next;
         }
         
         //got the right sNode

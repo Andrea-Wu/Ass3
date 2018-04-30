@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include "util.h"
 
+void printMsg(Message* m);
+
 int writeMessage(int fd, Message m)
 {
   int fd_copy = dup(fd);
@@ -114,6 +116,7 @@ int readMessage(int fd, Message* m)
     printf("util.c: successfully scanned %s as filename\n", m->filename);
   }
   fclose(sock);
+    printMsg(m);
   return 0;
 }
 
