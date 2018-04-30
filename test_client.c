@@ -13,7 +13,7 @@
 int main(){
   int status;
   status = netserverinit(HOST, Unrestricted);
-  int h =  netopen("dir", O_RDONLY);
+  int h =  netopen("dir", O_RDWR);
   printf("client: The fd we got back from the server:%d\n", h);
   printf("client: netOpen has done its job!\n");
 
@@ -24,7 +24,7 @@ int main(){
   int m = netwrite(h, dafuq, strlen(dafuq));  
   printf("client: result of netwrite: %d\n", m);
 
-  //int n = netclose(h);
-  //printf("client: result of netclose: %d\n", n);
+  int n = netclose(h);
+  printf("client: result of netclose: %d\n", n);
   return 0;  
 }

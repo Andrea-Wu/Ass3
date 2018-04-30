@@ -141,7 +141,6 @@ int server(char* port){
           printf("server.c: initial msg from client not read\n");  
        }else{
             printf("server.c: initial message from client read\n");
-            printMsg(message);
         }
         
         //IMPORTANT: this thread might break if not malloced
@@ -159,29 +158,31 @@ int server(char* port){
             }
             //call open
            pthread_create(&thread, NULL, myOpen, (void*)m);
-
+           pthread_detach(thread);
        }else if(messType == Read){
             printf("server.c: client wants to read\n");
 
             pthread_create(&thread, NULL, myRead, (void*)m);
 
+           pthread_detach(thread);
        }else if(messType == Write){
             printf("server.c: client wants to write\n");
 
             pthread_create(&thread, NULL, myWrite, (void*)m);
 
 
+           pthread_detach(thread);
        }else if(messType == Close){
             printf("server.c: client wants to close\n");
 
             pthread_create(&thread, NULL, myClose, (void*)m);
 
+           pthread_detach(thread);
 
        }else{
             printf("this broke\n");
        }
 
-       pthread_detach(thread);
 
 /*
         rc = pthread_create(&tid, NULL, print, con);
@@ -320,7 +321,7 @@ void* myOpen(void* args){
         if(access == Unrestricted){
             if(file_already_in_transaction_mode){
                 writeErrMsg(LACK_OF_PERMISSION_ERROR, con);
-                return;
+                pthread_exit(NULL);
             }
 
             if(mode == O_RDONLY || mode == O_RDWR){
@@ -330,14 +331,14 @@ void* myOpen(void* args){
             if(mode == O_WRONLY || mode == O_RDWR){
                 if(file_is_opened_for_writing_in_exclusive){
                     writeErrMsg(LACK_OF_PERMISSION_ERROR, con);
-                    return;
+                    pthread_exit(NULL);
                 }
             }
         
         }else if(access == Exclusive){
             if(file_already_in_transaction_mode){
                 writeErrMsg(LACK_OF_PERMISSION_ERROR, con);
-                return;
+                pthread_exit(NULL);
             }
 
             if(mode == O_RDONLY || mode == O_RDWR){
@@ -348,7 +349,7 @@ void* myOpen(void* args){
 
                 if(file_is_opened_for_writing){
                     writeErrMsg(LACK_OF_PERMISSION_ERROR, con);
-                    return;
+                    pthread_exit(NULL);
                 }
             }
         
@@ -356,7 +357,7 @@ void* myOpen(void* args){
             if(filename_open){
                 //lack of permission code error
                 writeErrMsg(LACK_OF_PERMISSION_ERROR, con);
-                return;
+                pthread_exit(NULL);
             }
 
             //filename is not open at all
@@ -364,7 +365,7 @@ void* myOpen(void* args){
 
         }else{
             writeErrMsg(INVALID_FILE_MODE, con);
-            return;
+            pthread_exit(NULL);
         }
     }
      pthread_mutex_unlock(&lockB);
@@ -393,7 +394,6 @@ void* myOpen(void* args){
     //message -> buffer_len = -1;
     //message -> filename_len = 3;
 
-    writeMessage(1, *message);
 
     printf("connection fd is %d\n", con);
     int didWrite = writeMessage(con, *message);
@@ -402,7 +402,7 @@ void* myOpen(void* args){
     if(didWrite){
         //did not write
         printf("server did not write to client\n");
-        return;
+        pthread_exit(NULL);
     }
     close(con);
 }
@@ -546,7 +546,7 @@ void* myRead(void* args){
         }else{
             printf("server.c: permission failed err sent to client\n");
         }
-        return;   
+        pthread_exit(NULL);   
     }
 
 
@@ -562,7 +562,7 @@ void* myRead(void* args){
     if (bytesRead == -1){
       message->message_type = Error;
       message->return_code = errno;
-      return;
+      pthread_exit(NULL);
     }else{
       message->message_type = ReadResponse;
       message -> buffer = buffer;
@@ -573,7 +573,7 @@ void* myRead(void* args){
     if(writeMessage(con, *message)){
         //did not write
         printf("server did not write to client\n");
-        return;
+        pthread_exit(NULL);
     }
     close(con);
     free(message);
@@ -602,7 +602,7 @@ void* myWrite(void* args){
     if(fd_node -> write == 0){
         printf("server.c: fd does not have write permissions\n");
         writeErrMsg(errno, con);
-        return;
+        pthread_exit(NULL);
     }
 
     printf("server.c: 466  fd= %d, str= %s, numBytes= %d\n", fd, writeMe, numBytes);
@@ -623,7 +623,7 @@ void* myWrite(void* args){
 
     if(writeMessage(con, *message)){
         printf("server did not write to client\n");
-        return;
+        pthread_exit(NULL);
     }
     
     close(con);
@@ -650,7 +650,7 @@ void* myClose(void* args){
             message -> message_type = Error;
             message -> return_code = errno;
             writeErrMsg(errno, con);
-            return;
+            pthread_exit(NULL);
     }else{
             message->message_type = CloseResponse;
             message->buffer_len = -1;
@@ -673,7 +673,6 @@ void* myClose(void* args){
         
     
         while(strcmp(sNodes -> str, fileString) != 0){
-            sNodes = sNodes -> next;
         }
         
         //got the right sNode
@@ -723,7 +722,7 @@ void* myClose(void* args){
 
     if(writeMessage(con, *message)){
         printf("server did not write to client\n");
-        return;
+        pthread_exit(NULL);
     }
 
     close(con);

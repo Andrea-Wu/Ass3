@@ -48,8 +48,8 @@ int writeMessage(int fd, Message m)
     printf("util.c: successfully wrote %s as filename\n", m.filename);
   }
 
-  printf("util.c: end writeMessage\n");
   fflush(sock);
+  printf("util.c: end writeMessage\n");
   fclose(sock);
   return 0;
 }
