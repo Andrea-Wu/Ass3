@@ -139,10 +139,16 @@ int server(char* port){
 
        //ASSUMPTION: this has to be malloced so that threading doesn't break
        Message*  message = (Message*)malloc(sizeof(Message));
+
        if(readMessage(con -> fd, message)){
           printf("server.c: initial msg from client not read\n");  
        }else{
             printf("server.c: initial message from client read\n");
+        }
+
+        if((message -> fd) == -1){
+            writeErrMsg(EBADF, con -> fd);
+            continue;
         }
         
         //IMPORTANT: this thread might break if not malloced
@@ -154,8 +160,10 @@ int server(char* port){
         myFd = myFd * -1;
 
          MessageType messType = message -> message_type;
-
+        printf("server.c: 157\n");
         pthread_mutex_lock(&htLock);
+        printf("server.c: 159\n");
+        printf("messType = %d\n", messType); 
 
         if(messType == Open){
             if(message -> filename){
@@ -274,7 +282,12 @@ void* myOpen(void* args){
     char* filename = message_arg -> filename;
     Access access = message_arg -> client_access;
     int mode = message_arg -> mode;
-
+    
+    if(!( mode == O_RDONLY || mode == O_WRONLY || mode == O_RDWR)){
+        
+        writeErrMsg(INVALID_OPEN_FLAG, con);
+        return;
+    }
 
     Message* message = (Message*)malloc(sizeof(Message));
  
@@ -403,7 +416,10 @@ void* myOpen(void* args){
         perror("error: ");
         message -> message_type = Error;
         message -> return_code = errno;
+        message -> fd = 1;
         perror("perror");
+        writeMessage(con, *message);
+        return;
     }else{
         message -> message_type = OpenResponse;
         message -> fd = fd;
@@ -439,6 +455,7 @@ void writeErrMsg(int err, int con){
     Message* message = (Message*)malloc(sizeof(Message));
     message -> message_type = Error;
     message -> return_code = err;
+    message -> fd = -1;
     perror("error");
     writeMessage(con, *message);
     return;
@@ -594,7 +611,7 @@ void* myRead(void* args){
 
         message -> buffer_len = -1;
         message -> message_type = Error;
-        message -> return_code = errno;
+        message -> return_code = 9; //EBADF
 
         if(writeMessage(con, *message)){
             printf("server.c: permission error AND msg to client failed\n");
@@ -659,7 +676,7 @@ void* myWrite(void* args){
     node* fd_node = hashtable_fd[fd];
     if(fd_node -> write == 0){
         printf("server.c: fd does not have write permissions\n");
-        writeErrMsg(errno, con);
+        writeErrMsg(EBADF, con);
         pthread_exit(NULL);
     }
 
