@@ -35,6 +35,8 @@ typedef struct m_and_c{
 sNode** hashtable;  //global hash on filenames    
 node** hashtable_fd; //global hash on fds
 
+pthread_mutex_t htLock;
+
 
 
 #define BACKLOG 5
@@ -148,8 +150,13 @@ int server(char* port){
         m_and_c* m = (m_and_c*)malloc(sizeof(m_and_c));
         m -> message = message;
         m -> conFd = con -> fd; 
+        int myFd = message -> fd;
+        myFd = myFd * -1;
 
          MessageType messType = message -> message_type;
+
+        pthread_mutex_lock(&htLock);
+
         if(messType == Open){
             if(message -> filename){
                 printf("server.c: client wants to Open %s\n", message -> filename);
@@ -160,12 +167,30 @@ int server(char* port){
            pthread_create(&thread, NULL, myOpen, (void*)m);
            pthread_detach(thread);
        }else if(messType == Read){
+            printf("server.c: IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!!! myFd is %d\n", myFd);
+            node* myNode = hashtable_fd[myFd];
+            printf("server.c: read from hashtable\n");
+    
+            if(myNode){
+                printf("this is not null\n");
+            }else{
+                printf("this is null\n");
+            }
+
+            if(myNode -> numReads){
+                printf("this var is %d\n", myNode -> numReads);
+            }else{
+                printf("ERRRRR\n");
+            }
+            myNode -> numReads = (myNode -> numReads) + 1;
             printf("server.c: client wants to read\n");
 
             pthread_create(&thread, NULL, myRead, (void*)m);
 
            pthread_detach(thread);
        }else if(messType == Write){
+            node* myNode = hashtable_fd[myFd];
+            myNode -> numWrites = (myNode -> numWrites) + 1;
             printf("server.c: client wants to write\n");
 
             pthread_create(&thread, NULL, myWrite, (void*)m);
@@ -183,7 +208,7 @@ int server(char* port){
             printf("this broke\n");
        }
 
-
+        pthread_mutex_unlock(&htLock);
 /*
         rc = pthread_create(&tid, NULL, print, con);
         if(rc != 0){
@@ -233,7 +258,6 @@ void * print(void * arg){ //note the void*, void * == thread function
 }
 
 
-pthread_mutex_t lockB;
 //int myOpen(char* filename, Access access, int mode, int con){
 void* myOpen(void* args){
     //returns an int that represents state of file
@@ -255,7 +279,7 @@ void* myOpen(void* args){
     Message* message = (Message*)malloc(sizeof(Message));
  
 
-    pthread_mutex_lock(&lockB);
+    pthread_mutex_lock(&htLock);
     int fd; //fd that will be opened
 
     //tmp should always exist
@@ -368,15 +392,18 @@ void* myOpen(void* args){
             pthread_exit(NULL);
         }
     }
-     pthread_mutex_unlock(&lockB);
+     pthread_mutex_unlock(&htLock);
 
     printf("about to open %s\n", filename);
+
+    printf("IMPORTANT: FILE MODE IS %d AND SHOULD BE %d\n", mode,O_RDWR);
 
     if( (fd  = open(filename, mode)) == -1){
         printf("server.c: file did not open\n");
         perror("error: ");
         message -> message_type = Error;
         message -> return_code = errno;
+        perror("perror");
     }else{
         message -> message_type = OpenResponse;
         message -> fd = fd;
@@ -412,6 +439,7 @@ void writeErrMsg(int err, int con){
     Message* message = (Message*)malloc(sizeof(Message));
     message -> message_type = Error;
     message -> return_code = err;
+    perror("error");
     writeMessage(con, *message);
     return;
 
@@ -444,29 +472,52 @@ void addFd( int fd, int mode, char* filename, Access client_access){
 
     //create node to insert
     node* newNode = (node*)malloc(sizeof(node));
+    node* newNode2 = (node*)malloc(sizeof(node));
+
     newNode -> fd = fd;
-    newNode -> filename = filename;
+    newNode2 -> fd = fd;
+
+    //malloc the filenames
+
+    char* filename_cpy = (char*)malloc(sizeof(char) * (strlen(filename) + 1));
+    char* filename_cpy2 = (char*)malloc(sizeof(char) * (strlen(filename) + 1));
+
+    strcpy(filename_cpy, filename);
+    strcpy(filename_cpy2, filename);
+
+    newNode -> filename = filename_cpy;
+    newNode2 -> filename = filename_cpy2;
+
 
     //this is stupid 
 
     if(mode == O_RDONLY || mode == O_RDWR){
         newNode -> read = 1;
+        newNode2 -> read = 1;
     
     }else{
         newNode -> read = 0;
+        newNode2 -> read = 0;
     }
 
 
     if(mode == O_WRONLY || mode == O_RDWR){
         newNode -> write = 1;
+        newNode2 -> write = 1;
     }else{
         newNode -> write = 0;
+        newNode2 -> write = 0;
     }
 
     newNode -> client_access = client_access;
+    newNode2 -> client_access = client_access;
+
+    //I think you only have to set numWrites and numReads for newNode2
+    newNode2 -> numReads = 0;
+    newNode2 -> numWrites = 0;
 
     //MUTEX: insert into hashtable
-    pthread_mutex_lock(&lockA);
+    pthread_mutex_lock(&htLock);
 
     //find sNode list corresp. to filename
     sNode* tmp = hashtable[bucket];
@@ -496,11 +547,11 @@ void addFd( int fd, int mode, char* filename, Access client_access){
     tmp -> fds = newNode;
     newNode -> next = tmp3;
 
-    pthread_mutex_unlock(&lockA);
+    pthread_mutex_unlock(&htLock);
 
     printf("server.c: inserted into hashtable\n");
     //MUTEX: insert into hashtable_fd
-    pthread_mutex_lock(&lockC);
+    pthread_mutex_lock(&htLock);
     
     //IMPORTANT: the assumption that file descriptors do not exceed 1000
 
@@ -509,16 +560,18 @@ void addFd( int fd, int mode, char* filename, Access client_access){
         //POTENTIAL PROBLEMS: ???
         //BENEFITS: don't need to free as many nodes
     printf("server.c: fd is %d\n", fd);
-    hashtable_fd[fd] = newNode;
+
+    printf("IM PUTTING IT INTHHHHHE HASH TABLE fd = %d\n", fd);
+    hashtable_fd[fd] = newNode2;
 
 
-    pthread_mutex_unlock(&lockC);
+    pthread_mutex_unlock(&htLock);
 
 }
 
 //int myRead(int fd, int con, int numBytes){
 void* myRead(void* args){
-
+    printf("server.c: hello?\n");
     //unpacking arguments
     m_and_c* mc = (m_and_c*)args;
     int con = mc -> conFd;
@@ -529,10 +582,12 @@ void* myRead(void* args){
     //make fd positive
     fd = fd * -1;
 
+
     Message* message = (Message*)malloc(sizeof(Message));
     message -> filename_len = -1;
 
     //IMPLEMENTATION: check hashtable_fd for file descriptor permissions
+    printf("server.c: IMPORTANTTTTTTTTTT fd is %d\n", fd);
     node* fd_node = hashtable_fd[fd];
     if(fd_node -> read == 0){
         printf("server.c: fd does not have read permission\n");
@@ -577,6 +632,9 @@ void* myRead(void* args){
     }
     close(con);
     free(message);
+
+    node* myNode = hashtable_fd[fd];
+    myNode -> numReads = (myNode -> numReads) - 1;
 }
 
 //int myWrite(int fd, int con, char* writeMe, int numBytes){
@@ -626,13 +684,15 @@ void* myWrite(void* args){
         pthread_exit(NULL);
     }
     
+    node* myNode = hashtable_fd[fd];
+    myNode -> numWrites = (myNode -> numWrites) -1;
+
     close(con);
     free(message);
 }
 
 //int myClose(int fd, int con){
 
-pthread_mutex_t lockD;
 void* myClose(void* args){
 
     //unpacking args
@@ -641,10 +701,17 @@ void* myClose(void* args){
     Message* message_arg = mc -> message;
     int fd = message_arg -> fd;
 
+    while(42){
+        node* myNode = hashtable_fd[fd];
+        if((myNode -> numReads) == 0 && (myNode -> numWrites) == 0){
+            break;
+        }
+    }
+
     Message* message = (Message*)malloc(sizeof(Message));
    
     fd = fd*-1;
-
+    printf("IMPORTANT: trying to close fd of %d\n", fd);
       if(close(fd)){
               printf("server failed to close file\n");
             message -> message_type = Error;
@@ -658,7 +725,7 @@ void* myClose(void* args){
     }
 
 
-    pthread_mutex_lock(&lockD);
+    pthread_mutex_lock(&htLock);
 
     node* fdNode = hashtable_fd[fd];
     if(!fdNode){ //fd doesn't exist
@@ -698,6 +765,7 @@ void* myClose(void* args){
         }else{ //fd is the only one open for given file
             free(fdNodes);
             free(sNodes);
+            hashtable[bucket] = NULL;
         }
 
         //did you free the ptr in the hashtable_fd?
@@ -706,13 +774,14 @@ void* myClose(void* args){
     }
     
     //err if file's not even open to begin with
-    pthread_mutex_unlock(&lockD);
+    pthread_mutex_unlock(&htLock);
     
 
     if(close(fd)){
         printf("server failed to close file\n");
         message -> message_type = Error;
         message -> return_code = errno;
+        perror("perror");
     }else{
         message->message_type = CloseResponse;
         message->buffer_len = -1;

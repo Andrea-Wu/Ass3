@@ -17,14 +17,14 @@ int main(){
   printf("client: The fd we got back from the server:%d\n", h);
   printf("client: netOpen has done its job!\n");
 
-  //char* buf = (char*)malloc(sizeof(char) * 30);
-  //int n = netread(h, buf, 25);
+  char* buf = (char*)malloc(sizeof(char) * 30);
+//  int n = netread(h, buf, 25);
 
-  char* dafuq = "what the flipping fuck\n";
+  char* dafuq = "huehue\n";
   int m = netwrite(h, dafuq, strlen(dafuq));  
   printf("client: result of netwrite: %d\n", m);
 
-  int n = netclose(h);
-  printf("client: result of netclose: %d\n", n);
+  //int a = netclose(h);
+  //printf("client: result of netclose: %d\n", a);
   return 0;  
 }

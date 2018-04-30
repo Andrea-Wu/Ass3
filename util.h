@@ -2,7 +2,7 @@
 #define UTIL_H_
 
 #define PORT "8824"
-#define HOST "decorator.cs.rutgers.edu"
+#define HOST "pwd.cs.rutgers.edu"
 #define INVALID_FILE_MODE 6969
 #define LACK_OF_PERMISSION_ERROR 6970
 
