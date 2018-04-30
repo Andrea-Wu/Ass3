@@ -12,8 +12,8 @@
 
 int main(){
   int status;
-  status = netserverinit(HOST, Unrestricted);
-  int h =  netopen("file.txt", O_WRONLY);
+  status = netserverinit(HOST, Exclusive);
+  int h =  netopen("file.txt", O_RDWR);
   printf("%d\n", h);
   /*
   printf("client: The fd we got back from the server:%d\n", h);

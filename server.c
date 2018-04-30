@@ -639,6 +639,7 @@ void* myRead(void* args){
     if (bytesRead == -1){
       message->message_type = Error;
       message->return_code = errno;
+      writeMessage(con, *message); //just added
       pthread_exit(NULL);
     }else{
       message->message_type = ReadResponse;
