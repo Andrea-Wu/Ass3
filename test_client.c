@@ -20,11 +20,11 @@ int main(){
   //char* buf = (char*)malloc(sizeof(char) * 30);
   //int n = netread(h, buf, 25);
 
-  char* dafuq = "what the fresh fuck\n";
+  char* dafuq = "what the flipping fuck\n";
   int m = netwrite(h, dafuq, strlen(dafuq));  
   printf("client: result of netwrite: %d\n", m);
 
-  int n = netclose(h);
-  printf("client: result of netclose: %d\n", n);
+  //int n = netclose(h);
+  //printf("client: result of netclose: %d\n", n);
   return 0;  
 }

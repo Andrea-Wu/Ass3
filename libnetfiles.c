@@ -49,7 +49,6 @@ int netopen(const char* pathname, int flags){
   socket_fd = openCon();
   
   //let's make this fucking message!
-  m.client_access = access_mode;
   m.message_type = Open;
   m.mode = flags;
   m.client_access = access_mode;

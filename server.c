@@ -22,6 +22,8 @@ typedef struct node{
     int write; //is is writing
     char* filename;
     int client_access; //access mode
+    int numReads;
+    int numWrites;
     struct node* next;
 } node;
 
@@ -139,6 +141,7 @@ int server(char* port){
           printf("server.c: initial msg from client not read\n");  
        }else{
             printf("server.c: initial message from client read\n");
+            printMsg(message);
         }
         
         //IMPORTANT: this thread might break if not malloced
