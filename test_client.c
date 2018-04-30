@@ -13,14 +13,14 @@
 int main(){
   int status;
   status = netserverinit(HOST, Unrestricted);
-  int h =  netopen("dir", O_WRONLY);
+  int h =  netopen("dir", O_RDONLY);
   printf("client: The fd we got back from the server:%d\n", h);
   printf("client: netOpen has done its job!\n");
 
   //char* buf = (char*)malloc(sizeof(char) * 30);
   //int n = netread(h, buf, 25);
 
-  char* dafuq = "what the fuck\n";
+  char* dafuq = "what the fresh fuck\n";
   int m = netwrite(h, dafuq, strlen(dafuq));  
   printf("client: result of netwrite: %d\n", m);
 

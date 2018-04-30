@@ -80,6 +80,9 @@ int netopen(const char* pathname, int flags){
   }
    
   close(socket_fd);
+
+    printMsg(response);
+
   return response->fd*-1;
 }
 
@@ -128,6 +131,8 @@ ssize_t netread(int fildes, void* buf, size_t nbyte){
         printf("libmetfiles.c: did not read in string\n");
     }
     close(socket_fd);
+
+    printMsg(response);
   return 0;
 }
 
@@ -171,7 +176,9 @@ ssize_t netwrite(int fildes, const void* buf, size_t nbyte){
         printf("libnetfiles.c: reponse str %s\n", response -> buffer); //response -> buffer is null, why?
     }
     close(socket_fd);
- 
+
+    printMsg(response);
+
   return response->bytes_written;
 }
 
@@ -201,6 +208,8 @@ int netclose(int fd){
   }
   close(socket_fd);
   printf("libnetfiles.c: Successfully closed server connection!\n");
+
+  printMsg(response);
   return 0;
 }
 
@@ -230,3 +239,8 @@ int openCon(){
   }
   
 }
+
+
+
+
+

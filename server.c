@@ -50,6 +50,7 @@ void* myWrite(void* args);
 int server(char* port);
 void *print(void *arg);
 int hashFunction(char* str);
+void writeErrMsg(int err, int con);
 
 int main(){ //this is the server
     
@@ -177,7 +178,7 @@ int server(char* port){
             printf("this broke\n");
        }
 
-       pthread_detach(&thread);
+       pthread_detach(thread);
 
 /*
         rc = pthread_create(&tid, NULL, print, con);
@@ -247,6 +248,9 @@ void* myOpen(void* args){
     int mode = message_arg -> mode;
 
 
+    Message* message = (Message*)malloc(sizeof(Message));
+ 
+
     pthread_mutex_lock(&lockB);
     int fd; //fd that will be opened
 
@@ -312,7 +316,8 @@ void* myOpen(void* args){
     
         if(access == Unrestricted){
             if(file_already_in_transaction_mode){
-                return -1;
+                writeErrMsg(LACK_OF_PERMISSION_ERROR, con);
+                return;
             }
 
             if(mode == O_RDONLY || mode == O_RDWR){
@@ -321,13 +326,15 @@ void* myOpen(void* args){
 
             if(mode == O_WRONLY || mode == O_RDWR){
                 if(file_is_opened_for_writing_in_exclusive){
-                    return -1;
+                    writeErrMsg(LACK_OF_PERMISSION_ERROR, con);
+                    return;
                 }
             }
         
         }else if(access == Exclusive){
             if(file_already_in_transaction_mode){
-                return -1;
+                writeErrMsg(LACK_OF_PERMISSION_ERROR, con);
+                return;
             }
 
             if(mode == O_RDONLY || mode == O_RDWR){
@@ -337,26 +344,30 @@ void* myOpen(void* args){
             if(mode == O_WRONLY || mode == O_RDWR){
 
                 if(file_is_opened_for_writing){
-                    return -1;
+                    writeErrMsg(LACK_OF_PERMISSION_ERROR, con);
+                    return;
                 }
             }
         
         }else if(access == Transaction){
             if(filename_open){
                 //lack of permission code error
-                return -1;
+                writeErrMsg(LACK_OF_PERMISSION_ERROR, con);
+                return;
             }
 
             //filename is not open at all
             //if it's not open, then you can do anything, really!
 
         }else{
-            printf("error, undefined mode\n");
+            writeErrMsg(INVALID_FILE_MODE, con);
+            return;
         }
     }
      pthread_mutex_unlock(&lockB);
+
     printf("about to open %s\n", filename);
-    Message* message = (Message*)malloc(sizeof(Message));
+
     if( (fd  = open(filename, mode)) == -1){
         printf("server.c: file did not open\n");
         perror("error: ");
@@ -388,10 +399,19 @@ void* myOpen(void* args){
     if(didWrite){
         //did not write
         printf("server did not write to client\n");
-        return -1;
+        return;
     }
     close(con);
-    return 0;
+}
+
+void writeErrMsg(int err, int con){
+
+    Message* message = (Message*)malloc(sizeof(Message));
+    message -> message_type = Error;
+    message -> return_code = err;
+    writeMessage(con, *message);
+    return;
+
 }
 
 int hashFunction(char* str){
@@ -422,6 +442,7 @@ void addFd( int fd, int mode, char* filename, Access client_access){
     //create node to insert
     node* newNode = (node*)malloc(sizeof(node));
     newNode -> fd = fd;
+    newNode -> filename = filename;
 
     //this is stupid 
 
@@ -522,7 +543,7 @@ void* myRead(void* args){
         }else{
             printf("server.c: permission failed err sent to client\n");
         }
-        return -1;   
+        return;   
     }
 
 
@@ -538,7 +559,7 @@ void* myRead(void* args){
     if (bytesRead == -1){
       message->message_type = Error;
       message->return_code = errno;
-      return -1;
+      return;
     }else{
       message->message_type = ReadResponse;
       message -> buffer = buffer;
@@ -549,11 +570,10 @@ void* myRead(void* args){
     if(writeMessage(con, *message)){
         //did not write
         printf("server did not write to client\n");
-        return -1;
+        return;
     }
     close(con);
     free(message);
-    return 0;
 }
 
 //int myWrite(int fd, int con, char* writeMe, int numBytes){
@@ -571,23 +591,26 @@ void* myWrite(void* args){
     //make fd positive
     fd = fd * -1;
 
+    Message* message = (Message*)malloc(sizeof(Message));
+
+
     //IMPLEMENTATION: check hashtable_fd for file descriptor permissions
     node* fd_node = hashtable_fd[fd];
     if(fd_node -> write == 0){
         printf("server.c: fd does not have write permissions\n");
-        return -1;
+        writeErrMsg(errno, con);
+        return;
     }
 
     printf("server.c: 466  fd= %d, str= %s, numBytes= %d\n", fd, writeMe, numBytes);
     int bytesWritten = write(fd, writeMe, numBytes); 
 
-    Message* message = (Message*)malloc(sizeof(Message));
     if(bytesWritten == -1){
       printf("server did not write to fd %d\n", fd);
       perror("err");
       message->message_type = Error;
       message->return_code = errno;
-      return -1;
+        // return -1;
     }else{
       message->message_type = WriteResponse;
       message->buffer_len = -1;
@@ -597,16 +620,16 @@ void* myWrite(void* args){
 
     if(writeMessage(con, *message)){
         printf("server did not write to client\n");
-        return -1;
+        return;
     }
     
     close(con);
     free(message);
-    return 0;
-    
 }
 
 //int myClose(int fd, int con){
+
+pthread_mutex_t lockD;
 void* myClose(void* args){
 
     //unpacking args
@@ -618,11 +641,76 @@ void* myClose(void* args){
     Message* message = (Message*)malloc(sizeof(Message));
    
     fd = fd*-1;
+
+      if(close(fd)){
+              printf("server failed to close file\n");
+            message -> message_type = Error;
+            message -> return_code = errno;
+            writeErrMsg(errno, con);
+            return;
+    }else{
+            message->message_type = CloseResponse;
+            message->buffer_len = -1;
+            message->return_code = 0;
+    }
+
+
+    pthread_mutex_lock(&lockD);
+
+    node* fdNode = hashtable_fd[fd];
+    if(!fdNode){ //fd doesn't exist
+        printf("not supposed to happen\n");
+    }else{ //remove fd from LL
+        char* fileString = fdNode -> filename; //this might break
+        int bucket = hashFunction(fileString);
+
+        sNode* sNodes = hashtable[bucket];
+
+        //err if fd is not valid
+        
+    
+        while(strcmp(sNodes -> str, fileString) != 0){
+            sNodes = sNodes -> next;
+        }
+        
+        //got the right sNode
+
+        //ASSUMPTION: fdNodes will not be null
+        node* fdNodes = sNodes -> fds;
+
+        if(fdNodes -> next){ //fd isn't the only one open for given file
+
+            if((fdNodes -> fd) == fd){ //the fd you want is the first in list
+                sNodes -> fds = fdNodes -> next;
+                free(fdNodes);
+            }else{ //if not, iterate thru list
+                while(((fdNodes -> next) -> fd) != fd){
+                    fdNodes = fdNodes -> next;
+                }
+            
+                //linked list removal
+                node* temp  = fdNodes -> next;
+                fdNodes -> next = (fdNodes -> next) -> next;
+                free(temp);
+            }
+        }else{ //fd is the only one open for given file
+            free(fdNodes);
+            free(sNodes);
+        }
+
+        //did you free the ptr in the hashtable_fd?
+        //just to be safe. 
+        hashtable_fd[fd] = NULL;
+    }
+    
+    //err if file's not even open to begin with
+    pthread_mutex_unlock(&lockD);
+    
+
     if(close(fd)){
         printf("server failed to close file\n");
         message -> message_type = Error;
         message -> return_code = errno;
-        return -1;
     }else{
         message->message_type = CloseResponse;
         message->buffer_len = -1;
@@ -632,7 +720,7 @@ void* myClose(void* args){
 
     if(writeMessage(con, *message)){
         printf("server did not write to client\n");
-        return -1;
+        return;
     }
 
     close(con);

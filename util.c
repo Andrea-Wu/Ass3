@@ -117,6 +117,35 @@ int readMessage(int fd, Message* m)
   return 0;
 }
 
+void printMsg(Message* m){
+    printf("---------------msg data-------------\n");
+    printf("message type: %d\n", (MessageType)(m -> message_type));
+    printf("mode (r w rw): %d\n", m -> mode);
+    printf("access mode: %d\n", m -> client_access);
+    printf("fd: %d\n", m -> fd);
+    printf("buffer_len: %d\n", m -> buffer_len);
+    printf("buffer: %s\n", m -> buffer);
+    printf("filename_len: %d\n", m -> filename_len);
+    printf("bytes_written: %d\n", m -> bytes_written);
+    printf("return code: %d\n", m -> return_code);
+
+    if((m -> return_code) != 0 ){
+        char* err = (char*)malloc(sizeof(char) * 100);
+        if((m -> return_code) == LACK_OF_PERMISSION_ERROR){
+            printf("error: lack of permission error\n");
+        }else if((m -> return_code) == INVALID_FILE_MODE){
+            printf("error: invalid file mode\n");
+        }else{
+            strerror(m ->return_code, err, 99);
+            printf("error: %s\n", err);
+        }
+    }else{
+        printf("no error\n");
+    }
+
+    printf("-----------------end---------------\n");
+}
+
 /*
 int main(){
     Message m;

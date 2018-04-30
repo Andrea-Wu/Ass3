@@ -3,6 +3,9 @@
 
 #define PORT "8823"
 #define HOST "decorator.cs.rutgers.edu"
+#define INVALID_FILE_MODE 6969
+#define LACK_OF_PERMISSION_ERROR 6970
+
 
 typedef enum {Unrestricted, Exclusive, Transaction} Access;
 typedef enum {Open, Read, Write, Close, Error, Success, ReadResponse, WriteResponse, OpenResponse, CloseResponse} MessageType;
