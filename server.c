@@ -146,7 +146,7 @@ int server(char* port){
             printf("server.c: initial message from client read\n");
         }
 
-        if((message -> fd) == -1){
+        if((message -> fd) >= -1){
             writeErrMsg(EBADF, con -> fd);
             continue;
         }
@@ -179,7 +179,15 @@ int server(char* port){
            pthread_detach(thread);
        }else if(messType == Read){
             printf("server.c: IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!!! myFd is %d\n", myFd);
+
+
             node* myNode = hashtable_fd[myFd];
+
+            if(myNode == NULL){
+                writeErrMsg(EBADF, con -> fd);
+                pthread_mutex_unlock(&htLock);
+                continue;
+            }
             printf("server.c: read from hashtable\n");
     
             if(myNode){
@@ -201,6 +209,12 @@ int server(char* port){
            pthread_detach(thread);
        }else if(messType == Write){
             node* myNode = hashtable_fd[myFd];
+
+            if(myNode == NULL){
+                writeErrMsg(EBADF, con -> fd);
+                pthread_mutex_unlock(&htLock);
+                continue;
+            }
             myNode -> numWrites = (myNode -> numWrites) + 1;
             printf("server.c: client wants to write\n");
 

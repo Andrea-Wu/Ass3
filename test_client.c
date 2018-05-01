@@ -13,8 +13,11 @@
 int main(){
   int status;
   status = netserverinit(HOST, Exclusive);
-  int h =  netopen("file.txt", O_RDWR);
-  printf("%d\n", h);
+    int h =  netopen("file.txt", O_RDWR);
+    printf("%d\n", h);
+
+    char* buf = (char*)malloc(sizeof(char) * 30);
+    int f = netread(-100, buf, 30);
   /*
   printf("client: The fd we got back from the server:%d\n", h);
   printf("client: netOpen has done its job!\n");
