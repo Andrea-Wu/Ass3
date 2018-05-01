@@ -425,7 +425,7 @@ void* myOpen(void* args){
         perror("error: ");
         message -> message_type = Error;
         message -> return_code = errno;
-        message -> fd = 1;
+        message -> fd = -1;
         perror("perror");
         writeMessage(con, *message);
         return;
